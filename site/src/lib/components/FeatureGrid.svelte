@@ -1,9 +1,10 @@
 <script lang="ts">
 	import type { Feature } from '$lib/features';
+	import { reveal } from '$lib/reveal';
 	let { items, start = 1 }: { items: Feature[]; start?: number } = $props();
 </script>
 
-<div class="fgrid">
+<div class="fgrid" use:reveal={{ stagger: 45, y: 12 }}>
 	{#each items as f, i}
 		<article class="cell">
 			<span class="idx">{String(start + i).padStart(2, '0')}</span>

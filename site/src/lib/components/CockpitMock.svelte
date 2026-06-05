@@ -38,8 +38,8 @@
 		<div class="sidebar">
 			<div class="pane-head">Beads Explorer</div>
 			<ul class="tree">
-				{#each beads as b}
-					<li class="row" style="padding-left: {0.5 + b.indent * 1}rem">
+				{#each beads as b, i}
+					<li class="row" style="padding-left: {0.5 + b.indent * 1}rem; --i: {i}">
 						<span class="glyph {b.kind}">{b.glyph}</span>
 						<span class="bid">{b.id}</span>
 						<span class="blabel">{b.label}</span>
@@ -53,8 +53,8 @@
 				Fleet <span class="dim">· blackrim-hq</span>
 			</div>
 			<ul class="fleet">
-				{#each agents as a}
-					<li class="agent">
+				{#each agents as a, i}
+					<li class="agent" style="--i: {i}">
 						<span class="dot {a.state}" aria-hidden="true"></span>
 						<span class="aname">{a.name}</span>
 						<span class="arole">{a.role}</span>
@@ -306,9 +306,48 @@
 		background: var(--accent);
 		box-shadow: 0 0 8px var(--accent);
 	}
+	/* Boot sequence: the panes populate in order, like the instrument coming up. */
+	@keyframes boot {
+		from {
+			opacity: 0;
+			transform: translateY(7px);
+		}
+		to {
+			opacity: 1;
+			transform: none;
+		}
+	}
+	.pane-head {
+		animation: boot 0.5s var(--ease-out-quart) both 0.35s;
+	}
+	.row {
+		animation: boot 0.5s var(--ease-out-quart) both;
+		animation-delay: calc(0.5s + var(--i, 0) * 0.045s);
+	}
+	.agent {
+		animation: boot 0.5s var(--ease-out-quart) both;
+		animation-delay: calc(0.8s + var(--i, 0) * 0.07s);
+	}
+	.event {
+		animation: boot 0.5s var(--ease-out-quart) both 1s;
+	}
+	.chat {
+		animation: boot 0.55s var(--ease-out-quart) both 1.1s;
+	}
+
 	@media (prefers-reduced-motion: reduce) {
-		.pulse, .caret { animation: none; }
-		.caret { opacity: 1; }
+		.pulse,
+		.caret,
+		.pane-head,
+		.row,
+		.agent,
+		.event,
+		.chat {
+			animation: none;
+		}
+		.caret {
+			opacity: 1;
+		}
 	}
 	@media (max-width: 420px) {
 		.body { grid-template-columns: 2.2rem 10.5rem 1fr; }
