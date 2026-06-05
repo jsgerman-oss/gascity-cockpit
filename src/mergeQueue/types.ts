@@ -82,6 +82,8 @@ export interface MergeMessageNode {
   label: string;
   detail?: string;
   icon?: string;
+  /** `ThemeColor` id tinting the icon (e.g. the error red); see `../ui/view-state`. */
+  iconColor?: string;
 }
 
 export type MergeQueueNode = MergeGroupNode | MergeEntryNode | MergeMessageNode;

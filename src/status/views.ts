@@ -7,6 +7,7 @@
 // All label/description/severity logic lives in the tested `format.ts`.
 import * as vscode from 'vscode';
 import { CITY_PLACEHOLDER } from '../cities/index.ts';
+import { emptyNotice, errorNotice, loadingNotice, type StateNotice } from '../ui/index.ts';
 import type { Disposable } from '../discovery/index.ts';
 import {
   accessibleAgentLabel,
@@ -45,11 +46,16 @@ type FleetNode =
   | { kind: 'group'; cityName: string; group: 'agents' | 'sessions' }
   | { kind: 'agent'; cityName: string; agent: AgentResponse }
   | { kind: 'session'; cityName: string; session: SessionResponse }
-  | { kind: 'notice'; id: string; label: string; description?: string; icon?: string };
+  | { kind: 'notice'; id: string; label: string; description?: string; icon?: string; iconColor?: string };
 
 type EventNode =
   | { kind: 'event'; event: FleetEvent }
-  | { kind: 'notice'; id: string; label: string; description?: string };
+  | { kind: 'notice'; id: string; label: string; description?: string; icon?: string; iconColor?: string };
+
+/** Map a shared {@link StateNotice} onto a Fleet/Event notice node (its `detail` is the row description). */
+function noticeNode(id: string, n: StateNotice): { kind: 'notice'; id: string; label: string; description?: string; icon?: string; iconColor?: string } {
+  return { kind: 'notice', id, label: n.label, description: n.detail, icon: n.icon, iconColor: n.iconColor };
+}
 
 function statusIcon(kind: StatusKind): vscode.ThemeIcon {
   switch (kind) {
@@ -89,7 +95,9 @@ export class FleetTreeProvider implements vscode.TreeDataProvider<FleetNode>, Di
     if (!node) {
       const roots: FleetNode[] = [{ kind: 'supervisor' }];
       if (state.lastError) {
-        roots.push({ kind: 'notice', id: 'error', label: state.lastError, description: 'error' });
+        // Worded and iconned like every other pane's load error (cockpit-1ll.19) —
+        // the raw cause rides along in the description.
+        roots.push(noticeNode('error', errorNotice('the fleet', state.lastError)));
       }
       for (const city of state.cities) roots.push({ kind: 'city', city });
       if (!state.cities.length && !state.lastError) {
@@ -97,8 +105,8 @@ export class FleetTreeProvider implements vscode.TreeDataProvider<FleetNode>, Di
         // there are no cities (cockpit-1ll.16). Shared copy with the Beads pane.
         roots.push(
           state.loading
-            ? { kind: 'notice', id: 'loading', label: CITY_PLACEHOLDER.connecting, icon: 'loading~spin' }
-            : { kind: 'notice', id: 'no-cities', label: CITY_PLACEHOLDER.noCities },
+            ? noticeNode('loading', loadingNotice())
+            : noticeNode('no-cities', emptyNotice(CITY_PLACEHOLDER.noCities)),
         );
       }
       for (const err of state.partialErrors) {
@@ -116,11 +124,11 @@ export class FleetTreeProvider implements vscode.TreeDataProvider<FleetNode>, Di
     if (node.kind === 'group') {
       if (node.group === 'agents') {
         const agents = state.agentsByCity[node.cityName] ?? [];
-        if (!agents.length) return [{ kind: 'notice', id: `no-agents:${node.cityName}`, label: 'No agents' }];
+        if (!agents.length) return [noticeNode(`no-agents:${node.cityName}`, emptyNotice('No agents'))];
         return agents.map((agent) => ({ kind: 'agent', cityName: node.cityName, agent }));
       }
       const sessions = state.sessionsByCity[node.cityName] ?? [];
-      if (!sessions.length) return [{ kind: 'notice', id: `no-sessions:${node.cityName}`, label: 'No sessions' }];
+      if (!sessions.length) return [noticeNode(`no-sessions:${node.cityName}`, emptyNotice('No sessions'))];
       return sessions.map((session) => ({ kind: 'session', cityName: node.cityName, session }));
     }
     return [];
@@ -198,7 +206,10 @@ export class FleetTreeProvider implements vscode.TreeDataProvider<FleetNode>, Di
         const item = new vscode.TreeItem(node.label, None);
         item.id = `notice:${node.id}`;
         if (node.description) item.description = node.description;
-        item.iconPath = new vscode.ThemeIcon(node.icon ?? 'info');
+        item.iconPath = new vscode.ThemeIcon(
+          node.icon ?? 'info',
+          node.iconColor ? new vscode.ThemeColor(node.iconColor) : undefined,
+        );
         item.contextValue = 'gascityNotice';
         item.accessibilityInformation = { label: node.description ? `${node.label}, ${node.description}` : node.label };
         return item;
@@ -225,7 +236,7 @@ export class EventsTreeProvider implements vscode.TreeDataProvider<EventNode>, D
   getChildren(node?: EventNode): EventNode[] {
     if (node) return [];
     const events = this.store.state.events;
-    if (!events.length) return [{ kind: 'notice', id: 'no-events', label: 'No events yet' }];
+    if (!events.length) return [noticeNode('no-events', emptyNotice('No events yet'))];
     return events.map((event) => ({ kind: 'event', event }));
   }
 
@@ -233,8 +244,12 @@ export class EventsTreeProvider implements vscode.TreeDataProvider<EventNode>, D
     if (node.kind === 'notice') {
       const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.None);
       item.id = `notice:${node.id}`;
-      item.iconPath = new vscode.ThemeIcon('info');
-      item.accessibilityInformation = { label: node.label };
+      if (node.description) item.description = node.description;
+      item.iconPath = new vscode.ThemeIcon(
+        node.icon ?? 'info',
+        node.iconColor ? new vscode.ThemeColor(node.iconColor) : undefined,
+      );
+      item.accessibilityInformation = { label: node.description ? `${node.label}, ${node.description}` : node.label };
       return item;
     }
     const event = node.event;

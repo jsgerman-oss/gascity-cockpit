@@ -34,8 +34,9 @@ import {
   type ExplorerData,
   type GroupKey,
   type GroupNode,
+  type MessageNode,
 } from "../beads/index.ts";
-import { CITY_PLACEHOLDER } from "../cities/index.ts";
+import { errorNotice, loadingNotice, type StateNotice } from "../ui/index.ts";
 
 const VIEW_ID = "gascityCockpit.beads";
 const BEAD_SCHEME = "gascity-bead";
@@ -68,7 +69,7 @@ class BeadsTreeDataProvider implements vscode.TreeDataProvider<BeadTreeNode> {
   private readonly emitter = new vscode.EventEmitter<void>();
   readonly onDidChangeTreeData = this.emitter.event;
 
-  private roots: BeadTreeNode[] = [message("loading", CITY_PLACEHOLDER.connecting, "loading~spin")];
+  private roots: BeadTreeNode[] = [noticeNode("loading", loadingNotice())];
   private data: ExplorerData | null = null;
   private lastError: string | null = null;
   private spec: BeadViewSpec;
@@ -139,7 +140,7 @@ class BeadsTreeDataProvider implements vscode.TreeDataProvider<BeadTreeNode> {
 
   private rebuild(): void {
     if (this.lastError) {
-      this.roots = [message("error", "Cannot load beads", "error", this.lastError)];
+      this.roots = [noticeNode("error", errorNotice("beads", this.lastError))];
     } else if (this.data) {
       this.roots = buildBeadTree(this.data, this.spec);
     }
@@ -193,7 +194,11 @@ function buildTreeItem(node: BeadTreeNode): vscode.TreeItem {
       const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.None);
       item.id = node.id;
       item.contextValue = "gascityMessage";
-      if (node.icon) item.iconPath = new vscode.ThemeIcon(node.icon);
+      if (node.icon) {
+        item.iconPath = node.iconColor
+          ? new vscode.ThemeIcon(node.icon, new vscode.ThemeColor(node.iconColor))
+          : new vscode.ThemeIcon(node.icon);
+      }
       item.description = node.detail;
       item.tooltip = node.detail;
       return item;
@@ -239,8 +244,15 @@ function beadTooltip(node: BeadLeaf): vscode.MarkdownString {
   return md;
 }
 
-function message(suffix: string, label: string, icon?: string, detail?: string): BeadTreeNode {
-  return { kind: "message", id: `msg:${suffix}`, label, icon, detail };
+function noticeNode(suffix: string, notice: StateNotice): MessageNode {
+  return {
+    kind: "message",
+    id: `msg:${suffix}`,
+    label: notice.label,
+    detail: notice.detail,
+    icon: notice.icon,
+    iconColor: notice.iconColor,
+  };
 }
 
 // --- Bead detail (read-only Markdown virtual document) ----------------------

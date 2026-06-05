@@ -38,6 +38,7 @@ export {
   entryLabel,
   entryTooltip,
   loadErrorNode,
+  LOADING_MESSAGE,
   prRef,
   stateIcon,
   stateLabel,

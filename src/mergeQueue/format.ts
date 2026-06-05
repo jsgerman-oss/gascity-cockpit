@@ -2,6 +2,7 @@
 // branch→target line, a compact PR reference, the entry tooltip, and the
 // grouping that turns a flat entry list into the tree the provider walks. Pure
 // string/structure work — no `vscode` — so it is unit-tested directly.
+import { emptyNotice, errorNotice, loadingNotice, type StateNotice } from "../ui/index.ts";
 import { STATE_RANK } from "./derive.ts";
 import type {
   MergeEntryNode,
@@ -84,17 +85,31 @@ export function entryTooltip(entry: MergeQueueEntry): string {
   return lines.join("\n");
 }
 
-const EMPTY_MESSAGE: MergeMessageNode = {
-  kind: "message",
-  id: "empty",
-  label: "Merge queue is empty",
-  detail: "Nothing is waiting on the refinery right now.",
-  icon: "check-all",
-};
+/** Map a shared {@link StateNotice} onto a merge-queue message row. */
+function messageNode(id: string, notice: StateNotice): MergeMessageNode {
+  return {
+    kind: "message",
+    id,
+    label: notice.label,
+    detail: notice.detail,
+    icon: notice.icon,
+    iconColor: notice.iconColor,
+  };
+}
+
+/** The row shown before the first load completes — shared "connecting" copy + spinner. */
+export const LOADING_MESSAGE: MergeMessageNode = messageNode("loading", loadingNotice());
+
+// An empty queue is good news, so it keeps its cheerful check-all glyph rather
+// than the neutral empty dot — the shared structure, the pane's own emphasis.
+const EMPTY_MESSAGE: MergeMessageNode = messageNode(
+  "empty",
+  emptyNotice("Merge queue is empty", "Nothing is waiting on the refinery right now.", "check-all"),
+);
 
 /** Build the informational row shown when the queue could not be loaded. */
 export function loadErrorNode(detail: string): MergeMessageNode {
-  return { kind: "message", id: "error", label: "Cannot load merge queue", detail, icon: "error" };
+  return messageNode("error", errorNotice("the merge queue", detail));
 }
 
 /**

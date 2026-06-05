@@ -26,6 +26,7 @@ import {
   entryLabel,
   entryTooltip,
   loadErrorNode,
+  LOADING_MESSAGE,
   prRef,
   stateIcon,
   type MergeEntryNode,
@@ -66,9 +67,7 @@ class MergeQueueProvider implements vscode.TreeDataProvider<MergeQueueNode> {
   private readonly emitter = new vscode.EventEmitter<void>();
   readonly onDidChangeTreeData = this.emitter.event;
 
-  private roots: MergeQueueNode[] = [
-    { kind: "message", id: "loading", label: "Connecting to supervisor…", icon: "loading~spin" },
-  ];
+  private roots: MergeQueueNode[] = [LOADING_MESSAGE];
 
   constructor(
     private readonly repository: BeadsRepository,
@@ -125,7 +124,11 @@ function toTreeItem(node: MergeQueueNode): vscode.TreeItem {
     const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.None);
     item.id = node.id;
     if (node.detail) item.description = node.detail;
-    if (node.icon) item.iconPath = new vscode.ThemeIcon(node.icon);
+    if (node.icon) {
+      item.iconPath = node.iconColor
+        ? new vscode.ThemeIcon(node.icon, new vscode.ThemeColor(node.iconColor))
+        : new vscode.ThemeIcon(node.icon);
+    }
     return item;
   }
 
