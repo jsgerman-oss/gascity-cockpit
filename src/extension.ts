@@ -29,6 +29,13 @@ import {
   createCockpitClient,
   PINNED_API_VERSION,
 } from './api/index.ts';
+import {
+  FleetStatusStore,
+  LiveStatus,
+  SupervisorEventStream,
+  type StatusEndpoint,
+} from './status/index.ts';
+import { registerStatusViews } from './status/views.ts';
 
 const CONFIG_SECTION = 'gascityCockpit';
 
@@ -45,6 +52,54 @@ export function activate(context: vscode.ExtensionContext): void {
   statusBar.command = `${CONFIG_SECTION}.showStatus`;
   context.subscriptions.push(statusBar);
 
+  // Live status panes (cockpit-1ll.6): a vscode-free store fed by the typed
+  // client (snapshots) and the supervisor SSE feed (events), surfaced as two
+  // tree views. The ConnectionManager owns reachability; we connect/disconnect
+  // the live status as it reports the supervisor coming and going.
+  const store = new FleetStatusStore();
+  const live = new LiveStatus({
+    store,
+    createClient: (ep) =>
+      createCockpitClient({
+        baseUrl: ep.baseUrl,
+        timeoutMs: 5000,
+        ...(ep.token ? { headers: { Authorization: `Bearer ${ep.token}` } } : {}),
+      }),
+    createStream: (ep) =>
+      new SupervisorEventStream(ep.baseUrl, {
+        ...(ep.token ? { headers: { Authorization: `Bearer ${ep.token}` } } : {}),
+        log,
+      }),
+    log,
+  });
+  registerStatusViews(context, store, live);
+
+  // Connect the live status only to a fully-connected supervisor; reconnect on a
+  // detected restart or an endpoint/token change, and tear down when the API is
+  // gone. `liveKey` dedupes the connected endpoint so routine health polls don't
+  // churn the stream.
+  let liveKey: string | null = null;
+  const applyLiveStatus = (status: ConnectionStatus): void => {
+    const ep = status.endpoint;
+    if (status.state === 'connected' && ep) {
+      const key = `${ep.baseUrl}::${ep.token ?? ''}`;
+      if (status.restarted || key !== liveKey) {
+        liveKey = key;
+        const endpoint: StatusEndpoint = {
+          baseUrl: ep.baseUrl,
+          ...(ep.token ? { token: ep.token } : {}),
+        };
+        live.connect(endpoint);
+      }
+    } else if (status.state === 'unavailable' || status.state === 'idle') {
+      if (liveKey !== null) {
+        liveKey = null;
+        live.disconnect();
+      }
+      if (status.state === 'unavailable') store.clearSnapshot('Supervisor API unavailable');
+    }
+  };
+
   let manager = createManager(log);
   let lastStatus: ConnectionStatus = manager.status;
   const subscribe = (m: ConnectionManager) =>
@@ -54,6 +109,7 @@ export function activate(context: vscode.ExtensionContext): void {
       if (status.restarted) {
         log('info', 'supervisor restarted — downstream consumers should resubscribe');
       }
+      applyLiveStatus(status);
     });
   let statusSub = subscribe(manager);
   renderStatusBar(statusBar, manager.status);
@@ -113,6 +169,12 @@ export function activate(context: vscode.ExtensionContext): void {
     // Re-discover when the set of open folders changes (a city may have opened).
     vscode.workspace.onDidChangeWorkspaceFolders(() => manager.reconnect()),
     { dispose: () => manager.dispose() },
+    {
+      dispose: () => {
+        live.dispose();
+        store.dispose();
+      },
+    },
   );
 }
 
