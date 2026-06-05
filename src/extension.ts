@@ -4,8 +4,8 @@
  * Intentionally thin (PRD: the editor-bound layer is kept small and excluded
  * from heavy unit testing). It maps VS Code settings + workspace to the
  * `vscode`-free discovery/resilience core, drives a status-bar indicator and an
- * output channel, and exposes reconnect / show-status commands. All the logic
- * worth testing lives behind `./discovery`.
+ * output channel, and exposes reconnect / show-status / check-connection
+ * commands. All the logic worth testing lives behind `./discovery` and `./api`.
  */
 
 import * as vscode from 'vscode';
@@ -24,6 +24,11 @@ import {
   type LogLevel,
   type Logger,
 } from './discovery/index.ts';
+import {
+  checkApiCompatibility,
+  createCockpitClient,
+  PINNED_API_VERSION,
+} from './api/index.ts';
 
 const CONFIG_SECTION = 'gascityCockpit';
 
@@ -54,6 +59,7 @@ export function activate(context: vscode.ExtensionContext): void {
   renderStatusBar(statusBar, manager.status);
   statusBar.show();
   manager.start();
+  log('info', `GasCity Cockpit active — typed client pinned to /v0 contract ${PINNED_API_VERSION}`);
 
   context.subscriptions.push(
     vscode.commands.registerCommand(`${CONFIG_SECTION}.reconnect`, () => {
@@ -69,6 +75,29 @@ export function activate(context: vscode.ExtensionContext): void {
         'Reconnect',
       );
       if (choice === 'Reconnect') manager.reconnect();
+    }),
+    // Run the typed /v0 client against the currently-resolved endpoint and
+    // report version compatibility. The client is the seam feature beads build
+    // on; this command exercises it and surfaces contract drift.
+    vscode.commands.registerCommand(`${CONFIG_SECTION}.checkConnection`, async () => {
+      const endpoint = lastStatus.endpoint;
+      const baseUrl = endpoint?.baseUrl ?? DEFAULT_SUPERVISOR_BASE_URL;
+      output.show(true);
+      log('info', `checking /v0 compatibility at ${baseUrl} (client pinned to ${PINNED_API_VERSION})`);
+      const client = createCockpitClient({
+        baseUrl,
+        timeoutMs: 3000,
+        ...(endpoint?.token ? { headers: { Authorization: `Bearer ${endpoint.token}` } } : {}),
+      });
+      const compat = await checkApiCompatibility(client);
+      log(compat.ok ? 'info' : 'warn', `${compat.status}: ${compat.message}`);
+      if (compat.error?.requestId) log('info', `request id: ${compat.error.requestId}`);
+      if (compat.status === 'unreachable' || compat.status === 'mismatch') {
+        const choice = await vscode.window.showWarningMessage(compat.message, 'Show Log');
+        if (choice === 'Show Log') output.show(true);
+      } else {
+        void vscode.window.showInformationMessage(compat.message);
+      }
     }),
     // Rebuild the manager when relevant settings change (poll/backoff are fixed
     // at construction, so we recreate rather than just reconnect).

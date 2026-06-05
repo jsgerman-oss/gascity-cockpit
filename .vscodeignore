@@ -1,11 +1,28 @@
-# Sources & dev config — only the bundled out/extension.cjs ships.
+# Everything except the bundled extension is excluded from the .vsix.
+# openapi-fetch (the one runtime dep) is bundled into dist/ by esbuild, so
+# node_modules is not shipped (package script uses `vsce package --no-dependencies`).
+.vscode/**
+.vscode-test/**
+.github/**
+node_modules/**
+out/**
+coverage/**
+
 src/**
+scripts/**
+openapi/**
 docs/**
 .beads/**
 .gc/**
+.claude/**
+
+esbuild.mjs
+eslint.config.mjs
+vitest.config.ts
 tsconfig.json
-**/*.test.ts
-**/*.map
 .gitignore
-.vscode-test/**
-node_modules/**
+.eslintcache
+
+**/*.ts
+**/*.map
+**/*.test.*

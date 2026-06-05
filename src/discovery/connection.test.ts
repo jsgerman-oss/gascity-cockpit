@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { backoffDelay, ConnectionManager, type ConnectionDeps } from './connection.ts';
 import type { ApiEndpoint, ConnectionState, ConnectionStatus, HealthResponse } from './types.ts';

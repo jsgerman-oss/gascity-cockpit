@@ -4,9 +4,19 @@
   "description": "An adaptive, in-editor cockpit for monitoring and driving your gas cities, built on the gascity /v0 HTTP API.",
   "version": "0.0.1",
   "publisher": "gastown",
-  "type": "module",
   "private": true,
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jsgerman-oss/gascity-cockpit.git"
+  },
+  "keywords": [
+    "gascity",
+    "gas town",
+    "agents",
+    "beads",
+    "cockpit"
+  ],
   "engines": {
     "vscode": "^1.90.0",
     "node": ">=20"
@@ -14,7 +24,7 @@
   "categories": [
     "Other"
   ],
-  "main": "./out/extension.cjs",
+  "main": "./dist/extension.js",
   "activationEvents": [
     "onStartupFinished"
   ],
@@ -28,6 +38,11 @@
       {
         "command": "gascityCockpit.showStatus",
         "title": "GasCity Cockpit: Show Connection Status",
+        "category": "GasCity Cockpit"
+      },
+      {
+        "command": "gascityCockpit.checkConnection",
+        "title": "GasCity Cockpit: Check API Connection",
         "category": "GasCity Cockpit"
       }
     ],
@@ -66,16 +81,32 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc --noEmit -p ./",
-    "test": "node --test",
-    "build": "esbuild src/extension.ts --bundle --outfile=out/extension.cjs --platform=node --format=cjs --external:vscode --sourcemap",
-    "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.cjs --platform=node --format=cjs --external:vscode --sourcemap --watch",
-    "vscode:prepublish": "npm run build"
+    "generate": "node scripts/generate-client.mjs",
+    "generate:live": "node scripts/generate-client.mjs --live",
+    "compile": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "build": "node esbuild.mjs --production",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src scripts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "vscode:prepublish": "npm run build",
+    "package": "vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.13.5"
   },
   "devDependencies": {
+    "@eslint/js": "^9.17.0",
     "@types/node": "^22.10.0",
     "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.2.0",
     "esbuild": "^0.25.0",
-    "typescript": "^5.7.2"
+    "eslint": "^9.17.0",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0",
+    "vitest": "^2.1.8"
   }
 }
