@@ -1,0 +1,70 @@
+{
+  "views": {
+    "gascityCockpit": [
+      {
+        "id": "gascityCockpit.mergeQueue",
+        "name": "Merge Queue",
+        "icon": "media/cockpit.svg",
+        "contextualTitle": "GasCity Merge Queue"
+      }
+    ]
+  },
+  "commands": [
+    {
+      "command": "gascityCockpit.mergeQueue.refresh",
+      "title": "Refresh Merge Queue",
+      "category": "GasCity Merge Queue",
+      "icon": "$(refresh)"
+    },
+    {
+      "command": "gascityCockpit.mergeQueue.toggleMerged",
+      "title": "Toggle Recently Merged",
+      "category": "GasCity Merge Queue",
+      "icon": "$(git-merge)"
+    },
+    {
+      "command": "gascityCockpit.mergeQueue.reviewChanges",
+      "title": "Review Changes",
+      "category": "GasCity Merge Queue",
+      "icon": "$(diff)"
+    },
+    {
+      "command": "gascityCockpit.mergeQueue.openPr",
+      "title": "Open Pull Request",
+      "category": "GasCity Merge Queue",
+      "icon": "$(link-external)"
+    },
+    {
+      "command": "gascityCockpit.mergeQueue.approveMerge",
+      "title": "Approve & Merge…",
+      "category": "GasCity Merge Queue",
+      "icon": "$(check)"
+    },
+    {
+      "command": "gascityCockpit.mergeQueue.copyBranch",
+      "title": "Copy Branch Name",
+      "category": "GasCity Merge Queue",
+      "icon": "$(clippy)"
+    }
+  ],
+  "menus": {
+    "view/title": [
+      { "command": "gascityCockpit.mergeQueue.toggleMerged", "when": "view == gascityCockpit.mergeQueue", "group": "navigation@1" },
+      { "command": "gascityCockpit.mergeQueue.refresh", "when": "view == gascityCockpit.mergeQueue", "group": "navigation@2" }
+    ],
+    "view/item/context": [
+      { "command": "gascityCockpit.mergeQueue.reviewChanges", "when": "view == gascityCockpit.mergeQueue && viewItem =~ /^mergeEntry/", "group": "inline@1" },
+      { "command": "gascityCockpit.mergeQueue.approveMerge", "when": "view == gascityCockpit.mergeQueue && viewItem =~ /^mergeEntry/", "group": "inline@2" },
+      { "command": "gascityCockpit.mergeQueue.reviewChanges", "when": "view == gascityCockpit.mergeQueue && viewItem =~ /^mergeEntry/", "group": "1_review@1" },
+      { "command": "gascityCockpit.mergeQueue.openPr", "when": "view == gascityCockpit.mergeQueue && viewItem == mergeEntry.pr", "group": "1_review@2" },
+      { "command": "gascityCockpit.mergeQueue.approveMerge", "when": "view == gascityCockpit.mergeQueue && viewItem =~ /^mergeEntry/", "group": "1_review@3" },
+      { "command": "gascityCockpit.mergeQueue.copyBranch", "when": "view == gascityCockpit.mergeQueue && viewItem =~ /^mergeEntry/", "group": "2_meta@1" }
+    ],
+    "commandPalette": [
+      { "command": "gascityCockpit.mergeQueue.reviewChanges", "when": "false" },
+      { "command": "gascityCockpit.mergeQueue.openPr", "when": "false" },
+      { "command": "gascityCockpit.mergeQueue.approveMerge", "when": "false" },
+      { "command": "gascityCockpit.mergeQueue.copyBranch", "when": "false" }
+    ]
+  }
+}
