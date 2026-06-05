@@ -28,6 +28,7 @@ import townTopologyFeature from './townTopology.feature.ts';
 import timeTravelFeature from './timeTravel.feature.ts';
 import notificationsFeature from './notifications.feature.ts';
 import worktreeLensFeature from './worktreeLens.feature.ts';
+import telemetryFeature from './telemetry.feature.ts';
 
 /** Every cockpit feature, in activation order. Append new features here. */
 export const FEATURES: readonly CockpitFeature[] = [
@@ -45,6 +46,7 @@ export const FEATURES: readonly CockpitFeature[] = [
   timeTravelFeature,
   notificationsFeature,
   worktreeLensFeature,
+  telemetryFeature,
 ];
 
 /** Activate every registered feature against the shared host. */

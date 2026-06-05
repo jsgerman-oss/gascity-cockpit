@@ -55,6 +55,12 @@
           "contextualTitle": "GasCity Beads"
         },
         {
+          "id": "gascityCockpit.telemetry",
+          "name": "Cost & Tier",
+          "icon": "media/cockpit.svg",
+          "contextualTitle": "GasCity Cost & Tier"
+        },
+        {
           "id": "gascityCockpit.mergeQueue",
           "name": "Merge Queue",
           "icon": "media/cockpit.svg",
@@ -132,6 +138,12 @@
         "title": "Copy Bead ID",
         "category": "GasCity Beads",
         "icon": "$(copy)"
+      },
+      {
+        "command": "gascityCockpit.clearTelemetry",
+        "title": "GasCity Cockpit: Clear Telemetry",
+        "category": "GasCity Cockpit",
+        "icon": "$(clear-all)"
       },
       {
         "command": "gascityCockpit.code.openWorktree",
@@ -302,6 +314,11 @@
           "command": "gascityCockpit.beads.clearFilters",
           "when": "view == gascityCockpit.beads",
           "group": "1_filters"
+        },
+        {
+          "command": "gascityCockpit.clearTelemetry",
+          "when": "view == gascityCockpit.telemetry",
+          "group": "navigation@1"
         },
         {
           "command": "gascityCockpit.mergeQueue.toggleMerged",

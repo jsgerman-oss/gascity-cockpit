@@ -15,6 +15,7 @@ export default defineConfig({
         "src/beads/**/*.ts",
         "src/code/**/*.ts",
         "src/formulas/**/*.ts",
+        "src/telemetry/**/*.ts",
       ],
       // Generated types and tests are excluded; the thin vscode-bound status
       // glue (views.ts) is intentionally not unit-tested (PRD); bead fixtures

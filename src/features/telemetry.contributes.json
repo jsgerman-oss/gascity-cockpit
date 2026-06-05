@@ -1,0 +1,29 @@
+{
+  "views": {
+    "gascityCockpit": [
+      {
+        "id": "gascityCockpit.telemetry",
+        "name": "Cost & Tier",
+        "icon": "media/cockpit.svg",
+        "contextualTitle": "GasCity Cost & Tier"
+      }
+    ]
+  },
+  "commands": [
+    {
+      "command": "gascityCockpit.clearTelemetry",
+      "title": "GasCity Cockpit: Clear Telemetry",
+      "category": "GasCity Cockpit",
+      "icon": "$(clear-all)"
+    }
+  ],
+  "menus": {
+    "view/title": [
+      {
+        "command": "gascityCockpit.clearTelemetry",
+        "when": "view == gascityCockpit.telemetry",
+        "group": "navigation@1"
+      }
+    ]
+  }
+}
