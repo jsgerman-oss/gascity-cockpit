@@ -229,6 +229,12 @@
         "title": "Query Fleet…",
         "category": "GasCity Cockpit",
         "icon": "$(search)"
+      },
+      {
+        "command": "gascityCockpit.timeTravel.open",
+        "title": "Event Time-Travel…",
+        "category": "GasCity Cockpit",
+        "icon": "$(history)"
       }
     ],
     "menus": {
@@ -281,6 +287,11 @@
         {
           "command": "gascityCockpit.mergeQueue.refresh",
           "when": "view == gascityCockpit.mergeQueue",
+          "group": "navigation@2"
+        },
+        {
+          "command": "gascityCockpit.timeTravel.open",
+          "when": "view == gascityCockpit.events",
           "group": "navigation@2"
         }
       ],

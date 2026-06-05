@@ -1,0 +1,19 @@
+{
+  "commands": [
+    {
+      "command": "gascityCockpit.timeTravel.open",
+      "title": "Event Time-Travel…",
+      "category": "GasCity Cockpit",
+      "icon": "$(history)"
+    }
+  ],
+  "menus": {
+    "view/title": [
+      {
+        "command": "gascityCockpit.timeTravel.open",
+        "when": "view == gascityCockpit.events",
+        "group": "navigation@2"
+      }
+    ]
+  }
+}
