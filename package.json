@@ -131,6 +131,11 @@
         "title": "Copy Bead ID",
         "category": "GasCity Beads",
         "icon": "$(copy)"
+      },
+      {
+        "command": "gascityCockpit.openDashboard",
+        "title": "GasCity Cockpit: Open Dashboard",
+        "category": "GasCity Cockpit"
       }
     ],
     "menus": {
@@ -198,6 +203,11 @@
           "default": 15000,
           "minimum": 500,
           "markdownDescription": "Ceiling (ms) for exponential reconnect backoff."
+        },
+        "gascityCockpit.dashboard.url": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "URL of the gascity dashboard to **project** (embed) into a Cockpit webview tab (e.g. `http://127.0.0.1:5173`). Leave empty to show a configure placeholder. The dashboard must be embeddable — webview-safe framing/CSP — and is themed and given tokenized `/v0` access from the host over the embed bridge, so do **not** put an API token in this URL. Run `GasCity Cockpit: Open Dashboard` to project it."
         }
       }
     }

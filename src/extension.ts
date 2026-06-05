@@ -40,6 +40,7 @@ import { registerStatusViews } from './status/views.ts';
 import { openChat } from './chat/index.ts';
 import { BeadsRepository } from './beads/index.ts';
 import { registerBeadsExplorer } from './views/beadsExplorer.ts';
+import { DashboardPanel, type DashboardPanelDeps } from './dashboard/panel.ts';
 
 const CONFIG_SECTION = 'gascityCockpit';
 
@@ -129,6 +130,9 @@ export function activate(context: vscode.ExtensionContext): void {
       lastStatus = status;
       currentClient = clientFromStatus(status);
       renderStatusBar(statusBar, status);
+      // Keep an open projected dashboard's tokenized API access in sync as the
+      // endpoint/token changes (reconnect, supervisor restart, city switch).
+      DashboardPanel.current?.refreshApi();
       if (status.restarted) {
         log('info', 'supervisor restarted — downstream consumers should resubscribe');
       }
@@ -141,6 +145,15 @@ export function activate(context: vscode.ExtensionContext): void {
       if (connected || dropped || status.restarted) explorer.refresh();
       prevState = status.state;
     });
+
+  // Host context the projected dashboard tab reads through. Getters are live so
+  // the panel always sees the latest endpoint/token and dashboard URL.
+  const dashboardDeps: DashboardPanelDeps = {
+    readDashboardUrl: () =>
+      vscode.workspace.getConfiguration(CONFIG_SECTION).get<string>('dashboard.url', ''),
+    readEndpoint: () => lastStatus.endpoint,
+    log,
+  };
   let statusSub = subscribe(manager);
   renderStatusBar(statusBar, manager.status);
   statusBar.show();
@@ -193,17 +206,29 @@ export function activate(context: vscode.ExtensionContext): void {
       (preset?: { cityName?: string; sessionId?: string }) =>
         openChat({ endpoint: lastStatus.endpoint, log, ...(preset ? { preset } : {}) }),
     ),
-    // Rebuild the manager when relevant settings change (poll/backoff are fixed
-    // at construction, so we recreate rather than just reconnect).
+    // Project (embed) the configured gascity dashboard into a webview tab. The
+    // panel is dashboard-agnostic — driven by the `dashboard.url` setting — and
+    // shows a configure placeholder until a URL is set (PRD Dashboard projection).
+    vscode.commands.registerCommand(`${CONFIG_SECTION}.openDashboard`, () => {
+      log('info', 'opening projected dashboard tab');
+      DashboardPanel.show(dashboardDeps);
+    }),
+    // React to settings changes. API settings (poll/backoff are fixed at
+    // construction) require recreating the manager; the dashboard URL only needs
+    // the projected tab re-rendered.
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (!e.affectsConfiguration(CONFIG_SECTION)) return;
-      log('info', 'configuration changed — rebuilding connection');
-      statusSub.dispose();
-      manager.dispose();
-      prevState = null; // force the rebuilt manager's first connect to refresh
-      manager = createManager(log);
-      statusSub = subscribe(manager);
-      manager.start();
+      if (e.affectsConfiguration(`${CONFIG_SECTION}.api`)) {
+        log('info', 'API configuration changed — rebuilding connection');
+        statusSub.dispose();
+        manager.dispose();
+        prevState = null; // force the rebuilt manager's first connect to refresh
+        manager = createManager(log);
+        statusSub = subscribe(manager);
+        manager.start();
+      }
+      if (e.affectsConfiguration(`${CONFIG_SECTION}.dashboard.url`)) {
+        DashboardPanel.current?.render();
+      }
     }),
     // Re-discover when the set of open folders changes (a city may have opened).
     vscode.workspace.onDidChangeWorkspaceFolders(() => manager.reconnect()),
