@@ -1,0 +1,62 @@
+{
+  "viewsContainers": {
+    "activitybar": [
+      {
+        "id": "gascityCockpit",
+        "title": "GasCity Cockpit",
+        "icon": "media/cockpit.svg"
+      }
+    ]
+  },
+  "commands": [
+    {
+      "command": "gascityCockpit.reconnect",
+      "title": "GasCity Cockpit: Reconnect to Supervisor API",
+      "category": "GasCity Cockpit",
+      "icon": "$(plug)"
+    },
+    {
+      "command": "gascityCockpit.showStatus",
+      "title": "GasCity Cockpit: Show Connection Status",
+      "category": "GasCity Cockpit"
+    },
+    {
+      "command": "gascityCockpit.checkConnection",
+      "title": "GasCity Cockpit: Check API Connection",
+      "category": "GasCity Cockpit"
+    }
+  ],
+  "configuration": {
+    "title": "GasCity Cockpit",
+    "properties": {
+      "gascityCockpit.api.url": {
+        "type": "string",
+        "default": "",
+        "markdownDescription": "Explicit base URL of the gascity supervisor API (e.g. `http://127.0.0.1:8372`). Highest-priority discovery source — overrides the discovery descriptor and the default. Leave empty to auto-discover."
+      },
+      "gascityCockpit.api.token": {
+        "type": "string",
+        "default": "",
+        "markdownDescription": "Optional bearer token sent as `Authorization: Bearer <token>` to the supervisor API. Leave empty for the default localhost (unauthenticated) setup."
+      },
+      "gascityCockpit.api.healthPollSeconds": {
+        "type": "number",
+        "default": 10,
+        "minimum": 2,
+        "markdownDescription": "How often (seconds) to poll `/health` while connected, to detect the API going away (e.g. `gc stop` or a supervisor restart)."
+      },
+      "gascityCockpit.api.reconnect.baseDelayMs": {
+        "type": "number",
+        "default": 500,
+        "minimum": 50,
+        "markdownDescription": "Base delay (ms) for exponential reconnect backoff after the API becomes unreachable."
+      },
+      "gascityCockpit.api.reconnect.maxDelayMs": {
+        "type": "number",
+        "default": 15000,
+        "minimum": 500,
+        "markdownDescription": "Ceiling (ms) for exponential reconnect backoff."
+      }
+    }
+  }
+}

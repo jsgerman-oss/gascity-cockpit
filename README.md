@@ -111,7 +111,14 @@ seam so the editor-facing code stays thin and testable.
 
 ```
 src/
-  extension.ts          VS Code activation + commands (thin glue, kept untested)
+  extension.ts          VS Code activation — build the host, activate features, start
+  host/                 the connection core + the feature contract (thin glue)
+    types.ts            FeatureHost, CockpitFeature, CONFIG_SECTION
+    host.ts             createCockpitHost() — discovery, client, status bar, logger
+  features/             one self-registering module per feature (parallel-mergeable)
+    index.ts            the FEATURES registry + activateFeatures(host)
+    <id>.feature.ts     a feature wires itself onto the host here
+    <id>.contributes.json   that feature's package.json contributions (generated in)
   discovery/            endpoint discovery + resilience — NO `vscode` imports
     types.ts            shared contract types (descriptor, health, status)
     descriptor.ts       discovery descriptor parse / validate / build
@@ -247,6 +254,7 @@ deferred until it is stable.
 ## Documentation
 
 - [PRD](docs/PRD.md) — problem, solution, and full user-story set
+- [Contributing a feature](docs/contributing-features.md) — the feature registry + parallel-merge guardrails
 - [API discovery & resilience](docs/api-discovery-and-resilience.md)
 - [Beads explorer](docs/beads-explorer.md)
 - [Live status panes](docs/live-status-panes.md)
@@ -258,8 +266,12 @@ deferred until it is stable.
 Issues and PRs are welcome — see [Help Shape It](#help-shape-it--file-an-issue) above. The
 feature logic lives behind `vscode`-free domain cores (`src/api`, `src/discovery`, and each
 feature module) and is unit-tested with vitest; the VS Code activation layer
-(`src/extension.ts`) is kept deliberately thin, so most contributions are a self-contained
-module plus a small registration.
+(`src/extension.ts`) is kept deliberately thin. A feature is a self-contained module under
+`src/features/` that registers itself onto the shared host and carries its own
+`package.json` contributions — so features merge in parallel without touching `extension.ts`
+or hand-editing `package.json`. See **[Contributing a feature](docs/contributing-features.md)**
+for the full pattern and the parallel-merge guardrails (thin activation, `vscode`-free cores,
+per-feature contributes manifests, rebase-on-latest-`main`, and the `npm run check` gate).
 
 ---
 

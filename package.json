@@ -80,11 +80,6 @@
         "icon": "$(refresh)"
       },
       {
-        "command": "gascityCockpit.openChat",
-        "title": "GasCity Cockpit: Open Chat (Mayor / agent)",
-        "category": "GasCity Cockpit"
-      },
-      {
         "command": "gascityCockpit.beads.refresh",
         "title": "Refresh Beads",
         "category": "GasCity Beads",
@@ -133,11 +128,6 @@
         "icon": "$(copy)"
       },
       {
-        "command": "gascityCockpit.openDashboard",
-        "title": "GasCity Cockpit: Open Dashboard",
-        "category": "GasCity Cockpit"
-      },
-      {
         "command": "gascityCockpit.code.openWorktree",
         "title": "Open Worktree…",
         "category": "GasCity Beads",
@@ -172,6 +162,16 @@
         "category": "GasCity Cockpit"
       },
       {
+        "command": "gascityCockpit.openChat",
+        "title": "GasCity Cockpit: Open Chat (Mayor / agent)",
+        "category": "GasCity Cockpit"
+      },
+      {
+        "command": "gascityCockpit.openDashboard",
+        "title": "GasCity Cockpit: Open Dashboard",
+        "category": "GasCity Cockpit"
+      },
+      {
         "command": "gascityCockpit.extmsg.showStatus",
         "title": "GasCity Cockpit: Show extmsg Participant Status",
         "category": "GasCity Cockpit"
@@ -194,31 +194,108 @@
           "when": "view == gascityCockpit.events",
           "group": "navigation@1"
         },
-        { "command": "gascityCockpit.beads.filter", "when": "view == gascityCockpit.beads", "group": "navigation@1" },
-        { "command": "gascityCockpit.beads.setGroupBy", "when": "view == gascityCockpit.beads", "group": "navigation@2" },
-        { "command": "gascityCockpit.beads.toggleClosed", "when": "view == gascityCockpit.beads", "group": "navigation@3" },
-        { "command": "gascityCockpit.beads.refresh", "when": "view == gascityCockpit.beads", "group": "navigation@4" },
-        { "command": "gascityCockpit.beads.clearFilters", "when": "view == gascityCockpit.beads", "group": "1_filters" }
+        {
+          "command": "gascityCockpit.beads.filter",
+          "when": "view == gascityCockpit.beads",
+          "group": "navigation@1"
+        },
+        {
+          "command": "gascityCockpit.beads.setGroupBy",
+          "when": "view == gascityCockpit.beads",
+          "group": "navigation@2"
+        },
+        {
+          "command": "gascityCockpit.beads.toggleClosed",
+          "when": "view == gascityCockpit.beads",
+          "group": "navigation@3"
+        },
+        {
+          "command": "gascityCockpit.beads.refresh",
+          "when": "view == gascityCockpit.beads",
+          "group": "navigation@4"
+        },
+        {
+          "command": "gascityCockpit.beads.clearFilters",
+          "when": "view == gascityCockpit.beads",
+          "group": "1_filters"
+        }
       ],
       "view/item/context": [
-        { "command": "gascityCockpit.beads.showGraph", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "inline@1" },
-        { "command": "gascityCockpit.code.showDiff", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "inline@2" },
-        { "command": "gascityCockpit.beads.openDetail", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "1_bead@1" },
-        { "command": "gascityCockpit.beads.showGraph", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "1_bead@2" },
-        { "command": "gascityCockpit.beads.copyId", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "1_bead@3" },
-        { "command": "gascityCockpit.code.openWorktree", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "2_code@1" },
-        { "command": "gascityCockpit.code.showDiff", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "2_code@2" },
-        { "command": "gascityCockpit.code.browseChangedFiles", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "2_code@3" },
-        { "command": "gascityCockpit.beads.runTdd", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "2_code@4" }
+        {
+          "command": "gascityCockpit.beads.showGraph",
+          "when": "view == gascityCockpit.beads && viewItem == gascityBead",
+          "group": "inline@1"
+        },
+        {
+          "command": "gascityCockpit.beads.openDetail",
+          "when": "view == gascityCockpit.beads && viewItem == gascityBead",
+          "group": "1_bead@1"
+        },
+        {
+          "command": "gascityCockpit.beads.showGraph",
+          "when": "view == gascityCockpit.beads && viewItem == gascityBead",
+          "group": "1_bead@2"
+        },
+        {
+          "command": "gascityCockpit.beads.copyId",
+          "when": "view == gascityCockpit.beads && viewItem == gascityBead",
+          "group": "1_bead@3"
+        },
+        {
+          "command": "gascityCockpit.code.showDiff",
+          "when": "view == gascityCockpit.beads && viewItem == gascityBead",
+          "group": "inline@2"
+        },
+        {
+          "command": "gascityCockpit.code.openWorktree",
+          "when": "view == gascityCockpit.beads && viewItem == gascityBead",
+          "group": "2_code@1"
+        },
+        {
+          "command": "gascityCockpit.code.showDiff",
+          "when": "view == gascityCockpit.beads && viewItem == gascityBead",
+          "group": "2_code@2"
+        },
+        {
+          "command": "gascityCockpit.code.browseChangedFiles",
+          "when": "view == gascityCockpit.beads && viewItem == gascityBead",
+          "group": "2_code@3"
+        },
+        {
+          "command": "gascityCockpit.beads.runTdd",
+          "when": "view == gascityCockpit.beads && viewItem == gascityBead",
+          "group": "2_code@4"
+        }
       ],
       "commandPalette": [
-        { "command": "gascityCockpit.beads.openDetail", "when": "false" },
-        { "command": "gascityCockpit.beads.showGraph", "when": "false" },
-        { "command": "gascityCockpit.beads.copyId", "when": "false" },
-        { "command": "gascityCockpit.code.openWorktree", "when": "false" },
-        { "command": "gascityCockpit.code.showDiff", "when": "false" },
-        { "command": "gascityCockpit.code.browseChangedFiles", "when": "false" },
-        { "command": "gascityCockpit.beads.runTdd", "when": "false" }
+        {
+          "command": "gascityCockpit.beads.openDetail",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.beads.showGraph",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.beads.copyId",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.code.openWorktree",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.code.showDiff",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.code.browseChangedFiles",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.beads.runTdd",
+          "when": "false"
+        }
       ]
     },
     "configuration": {
@@ -263,6 +340,8 @@
   "scripts": {
     "generate": "node scripts/generate-client.mjs",
     "generate:live": "node scripts/generate-client.mjs --live",
+    "sync:contributes": "node scripts/sync-contributes.mjs",
+    "sync:contributes:check": "node scripts/sync-contributes.mjs --check",
     "compile": "node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
     "build": "node esbuild.mjs --production",

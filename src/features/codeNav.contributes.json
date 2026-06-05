@@ -1,0 +1,35 @@
+{
+  "commands": [
+    {
+      "command": "gascityCockpit.code.openWorktree",
+      "title": "Open Worktree…",
+      "category": "GasCity Beads",
+      "icon": "$(repo)"
+    },
+    {
+      "command": "gascityCockpit.code.showDiff",
+      "title": "Show Worktree Diff",
+      "category": "GasCity Beads",
+      "icon": "$(diff)"
+    },
+    {
+      "command": "gascityCockpit.code.browseChangedFiles",
+      "title": "Browse Changed Files",
+      "category": "GasCity Beads",
+      "icon": "$(list-tree)"
+    }
+  ],
+  "menus": {
+    "view/item/context": [
+      { "command": "gascityCockpit.code.showDiff", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "inline@2" },
+      { "command": "gascityCockpit.code.openWorktree", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "2_code@1" },
+      { "command": "gascityCockpit.code.showDiff", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "2_code@2" },
+      { "command": "gascityCockpit.code.browseChangedFiles", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "2_code@3" }
+    ],
+    "commandPalette": [
+      { "command": "gascityCockpit.code.openWorktree", "when": "false" },
+      { "command": "gascityCockpit.code.showDiff", "when": "false" },
+      { "command": "gascityCockpit.code.browseChangedFiles", "when": "false" }
+    ]
+  }
+}

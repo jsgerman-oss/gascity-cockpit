@@ -1,0 +1,9 @@
+{
+  "commands": [
+    {
+      "command": "gascityCockpit.extmsg.showStatus",
+      "title": "GasCity Cockpit: Show extmsg Participant Status",
+      "category": "GasCity Cockpit"
+    }
+  ]
+}

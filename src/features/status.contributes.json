@@ -1,0 +1,41 @@
+{
+  "views": {
+    "gascityCockpit": [
+      {
+        "id": "gascityCockpit.fleet",
+        "name": "Fleet"
+      },
+      {
+        "id": "gascityCockpit.events",
+        "name": "Event Feed"
+      }
+    ]
+  },
+  "commands": [
+    {
+      "command": "gascityCockpit.refreshStatus",
+      "title": "GasCity Cockpit: Refresh Live Status",
+      "category": "GasCity Cockpit",
+      "icon": "$(refresh)"
+    }
+  ],
+  "menus": {
+    "view/title": [
+      {
+        "command": "gascityCockpit.refreshStatus",
+        "when": "view == gascityCockpit.fleet",
+        "group": "navigation@1"
+      },
+      {
+        "command": "gascityCockpit.reconnect",
+        "when": "view == gascityCockpit.fleet",
+        "group": "navigation@2"
+      },
+      {
+        "command": "gascityCockpit.refreshStatus",
+        "when": "view == gascityCockpit.events",
+        "group": "navigation@1"
+      }
+    ]
+  }
+}

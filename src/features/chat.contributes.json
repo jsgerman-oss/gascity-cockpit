@@ -1,0 +1,9 @@
+{
+  "commands": [
+    {
+      "command": "gascityCockpit.openChat",
+      "title": "GasCity Cockpit: Open Chat (Mayor / agent)",
+      "category": "GasCity Cockpit"
+    }
+  ]
+}

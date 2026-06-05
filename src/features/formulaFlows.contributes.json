@@ -1,0 +1,28 @@
+{
+  "commands": [
+    {
+      "command": "gascityCockpit.beads.runTdd",
+      "title": "Run TDD Flow…",
+      "category": "GasCity Beads",
+      "icon": "$(beaker)"
+    },
+    {
+      "command": "gascityCockpit.formulas.preview",
+      "title": "GasCity Cockpit: Preview Formula",
+      "category": "GasCity Cockpit"
+    },
+    {
+      "command": "gascityCockpit.formulas.showRuns",
+      "title": "GasCity Cockpit: Watch Formula Runs",
+      "category": "GasCity Cockpit"
+    }
+  ],
+  "menus": {
+    "view/item/context": [
+      { "command": "gascityCockpit.beads.runTdd", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "2_code@4" }
+    ],
+    "commandPalette": [
+      { "command": "gascityCockpit.beads.runTdd", "when": "false" }
+    ]
+  }
+}
