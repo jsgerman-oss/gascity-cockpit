@@ -219,6 +219,12 @@
         "icon": "$(clippy)"
       },
       {
+        "command": "gascityCockpit.beads.newFromSelection",
+        "title": "New Bead from Selection…",
+        "category": "GasCity Beads",
+        "icon": "$(add)"
+      },
+      {
         "command": "gascityCockpit.fleetQuery.open",
         "title": "Query Fleet…",
         "category": "GasCity Cockpit",
@@ -399,6 +405,13 @@
         {
           "command": "gascityCockpit.mergeQueue.copyBranch",
           "when": "false"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "gascityCockpit.beads.newFromSelection",
+          "when": "editorTextFocus",
+          "group": "z_commands@1"
         }
       ]
     },

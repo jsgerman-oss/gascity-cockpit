@@ -1,0 +1,19 @@
+{
+  "commands": [
+    {
+      "command": "gascityCockpit.beads.newFromSelection",
+      "title": "New Bead from Selection…",
+      "category": "GasCity Beads",
+      "icon": "$(add)"
+    }
+  ],
+  "menus": {
+    "editor/context": [
+      {
+        "command": "gascityCockpit.beads.newFromSelection",
+        "when": "editorTextFocus",
+        "group": "z_commands@1"
+      }
+    ]
+  }
+}

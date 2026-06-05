@@ -44,6 +44,18 @@ export {
 
 export { formatBeadDetailMarkdown } from "./detail.ts";
 
+export {
+  MAX_SNIPPET_LINES,
+  SOURCE_FILE_KEY,
+  SOURCE_LINES_KEY,
+  buildBeadInput,
+  buildSelectionDescription,
+  formatLocation,
+  lineRange,
+  suggestTitle,
+  type CodeSelectionContext,
+} from "./from-selection.ts";
+
 export { accessibleBeadNodeLabel } from "./a11y.ts";
 
 export {

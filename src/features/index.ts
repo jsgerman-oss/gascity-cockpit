@@ -16,6 +16,7 @@
 import type { CockpitFeature, FeatureHost } from '../host/index.ts';
 import statusFeature from './status.feature.ts';
 import beadsFeature from './beads.feature.ts';
+import beadFromSelectionFeature from './beadFromSelection.feature.ts';
 import codeNavFeature from './codeNav.feature.ts';
 import formulaFlowsFeature from './formulaFlows.feature.ts';
 import chatFeature from './chat.feature.ts';
@@ -28,6 +29,7 @@ import mergeQueueFeature from './mergeQueue.feature.ts';
 export const FEATURES: readonly CockpitFeature[] = [
   statusFeature,
   beadsFeature,
+  beadFromSelectionFeature,
   codeNavFeature,
   formulaFlowsFeature,
   chatFeature,
