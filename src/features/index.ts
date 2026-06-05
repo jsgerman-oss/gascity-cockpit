@@ -21,6 +21,7 @@ import formulaFlowsFeature from './formulaFlows.feature.ts';
 import chatFeature from './chat.feature.ts';
 import dashboardFeature from './dashboard.feature.ts';
 import extmsgFeature from './extmsg.feature.ts';
+import fleetQueryFeature from './fleetQuery.feature.ts';
 
 /** Every cockpit feature, in activation order. Append new features here. */
 export const FEATURES: readonly CockpitFeature[] = [
@@ -31,6 +32,7 @@ export const FEATURES: readonly CockpitFeature[] = [
   chatFeature,
   dashboardFeature,
   extmsgFeature,
+  fleetQueryFeature,
 ];
 
 /** Activate every registered feature against the shared host. */

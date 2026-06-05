@@ -1,0 +1,10 @@
+{
+  "commands": [
+    {
+      "command": "gascityCockpit.fleetQuery.open",
+      "title": "Query Fleet…",
+      "category": "GasCity Cockpit",
+      "icon": "$(search)"
+    }
+  ]
+}

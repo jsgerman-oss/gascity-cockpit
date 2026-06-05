@@ -175,6 +175,12 @@
         "command": "gascityCockpit.extmsg.showStatus",
         "title": "GasCity Cockpit: Show extmsg Participant Status",
         "category": "GasCity Cockpit"
+      },
+      {
+        "command": "gascityCockpit.fleetQuery.open",
+        "title": "Query Fleet…",
+        "category": "GasCity Cockpit",
+        "icon": "$(search)"
       }
     ],
     "menus": {
