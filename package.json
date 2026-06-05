@@ -51,6 +51,11 @@
         "title": "GasCity Cockpit: Refresh Live Status",
         "category": "GasCity Cockpit",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "gascityCockpit.openChat",
+        "title": "GasCity Cockpit: Open Chat (Mayor / agent)",
+        "category": "GasCity Cockpit"
       }
     ],
     "viewsContainers": {

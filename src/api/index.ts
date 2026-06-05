@@ -9,3 +9,5 @@ export * from "./version";
 export * from "./sse";
 export * from "./approvals";
 export * from "./beads";
+export * from "./sessions";
+export * from "./session-stream";

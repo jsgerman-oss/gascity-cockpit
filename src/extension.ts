@@ -36,6 +36,7 @@ import {
   type StatusEndpoint,
 } from './status/index.ts';
 import { registerStatusViews } from './status/views.ts';
+import { openChat } from './chat/index.ts';
 
 const CONFIG_SECTION = 'gascityCockpit';
 
@@ -155,6 +156,14 @@ export function activate(context: vscode.ExtensionContext): void {
         void vscode.window.showInformationMessage(compat.message);
       }
     }),
+    // Open an interactive chat panel against a session. Accepts an optional
+    // preset ({cityName, sessionId}) so other Cockpit surfaces can deep-link in;
+    // otherwise it prompts for the city and session (Mayor listed first).
+    vscode.commands.registerCommand(
+      `${CONFIG_SECTION}.openChat`,
+      (preset?: { cityName?: string; sessionId?: string }) =>
+        openChat({ endpoint: lastStatus.endpoint, log, ...(preset ? { preset } : {}) }),
+    ),
     // Rebuild the manager when relevant settings change (poll/backoff are fixed
     // at construction, so we recreate rather than just reconnect).
     vscode.workspace.onDidChangeConfiguration((e) => {
