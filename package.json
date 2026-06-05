@@ -170,6 +170,11 @@
         "command": "gascityCockpit.formulas.showRuns",
         "title": "GasCity Cockpit: Watch Formula Runs",
         "category": "GasCity Cockpit"
+      },
+      {
+        "command": "gascityCockpit.extmsg.showStatus",
+        "title": "GasCity Cockpit: Show extmsg Participant Status",
+        "category": "GasCity Cockpit"
       }
     ],
     "menus": {

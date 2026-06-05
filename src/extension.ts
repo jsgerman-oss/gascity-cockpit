@@ -43,6 +43,7 @@ import { registerBeadsExplorer } from './views/beadsExplorer.ts';
 import { registerCodeNav } from './views/codeNav.ts';
 import { registerFormulaFlows } from './views/formulaFlows.ts';
 import { DashboardPanel, type DashboardPanelDeps } from './dashboard/panel.ts';
+import { CallbackServer, ExtMsgParticipant, type ParticipantEndpoint } from './extmsg/index.ts';
 
 const CONFIG_SECTION = 'gascityCockpit';
 
@@ -104,6 +105,25 @@ export function activate(context: vscode.ExtensionContext): void {
   registerCodeNav(context, { repository });
   registerFormulaFlows(context, { getClient: () => currentClient, repository, log });
 
+  // VS Code as a first-class, durable extmsg participant (cockpit-1ll.12). A
+  // loopback callback service gives the supervisor a reachable URL for outbound
+  // delivery; the participant registers the Cockpit adapter in each running city
+  // and re-registers on every (re)connect, since the supervisor's adapter
+  // registry is in-memory and ephemeral (pack docs/DESIGN.md fork #2).
+  const callbackServer = new CallbackServer({ log });
+  const participant = new ExtMsgParticipant({
+    createClient: (ep) =>
+      createCockpitClient({
+        baseUrl: ep.baseUrl,
+        timeoutMs: 5000,
+        ...(ep.token ? { headers: { Authorization: `Bearer ${ep.token}` } } : {}),
+      }),
+    callbackServer,
+    onDelivery: (d) =>
+      log('info', 'extmsg delivery received on Cockpit callback', { receivedAt: d.receivedAt }),
+    log,
+  });
+
   // Connect the live status only to a fully-connected supervisor; reconnect on a
   // detected restart or an endpoint/token change, and tear down when the API is
   // gone. `liveKey` dedupes the connected endpoint so routine health polls don't
@@ -130,6 +150,36 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   };
 
+  // Drive the extmsg participant off the same reachability signal: (re)register
+  // on connect or supervisor restart, unregister when the API goes away. Keyed
+  // like liveKey so routine health polls don't churn registrations.
+  let participantKey: string | null = null;
+  const applyParticipant = (status: ConnectionStatus): void => {
+    const ep = status.endpoint;
+    if (status.state === 'connected' && ep) {
+      const key = `${ep.baseUrl}::${ep.token ?? ''}`;
+      if (status.restarted || key !== participantKey) {
+        participantKey = key;
+        const endpoint: ParticipantEndpoint = {
+          baseUrl: ep.baseUrl,
+          ...(ep.token ? { token: ep.token } : {}),
+        };
+        void participant
+          .connect(endpoint)
+          .catch((err) =>
+            log('warn', 'extmsg participant connect failed', {
+              error: err instanceof Error ? err.message : String(err),
+            }),
+          );
+      }
+    } else if (status.state === 'unavailable' || status.state === 'idle') {
+      if (participantKey !== null) {
+        participantKey = null;
+        void participant.disconnect().catch(() => {});
+      }
+    }
+  };
+
   let manager = createManager(log);
   let lastStatus: ConnectionStatus = manager.status;
   let prevState: ConnectionStatus['state'] | null = null;
@@ -146,6 +196,8 @@ export function activate(context: vscode.ExtensionContext): void {
       }
       // Live status panes follow the supervisor's reachability.
       applyLiveStatus(status);
+      // The extmsg participant registers/unregisters on the same signal.
+      applyParticipant(status);
       // Reload the explorer on meaningful transitions: first connect, a
       // supervisor restart, or the API dropping out.
       const connected = status.state === 'connected' && prevState !== 'connected';
@@ -221,6 +273,30 @@ export function activate(context: vscode.ExtensionContext): void {
       log('info', 'opening projected dashboard tab');
       DashboardPanel.show(dashboardDeps);
     }),
+    // Show extmsg participant status: the reachable callback URL, per-city
+    // registration state, and recent delivery count. Offers to copy the URL.
+    vscode.commands.registerCommand(`${CONFIG_SECTION}.extmsg.showStatus`, async () => {
+      const url = participant.callbackUrl;
+      const regs = participant.registrations;
+      const summary = regs.length
+        ? regs.map((r) => `${r.city}: ${r.status}${r.detail ? ` (${r.detail})` : ''}`).join(', ')
+        : 'not registered';
+      output.show(true);
+      log(
+        'info',
+        `extmsg participant — callback ${url ?? '(not started)'}; registrations: ${summary}; deliveries: ${participant.recentDeliveries.length}`,
+      );
+      const actions = url ? ['Copy Callback URL', 'Show Log'] : ['Show Log'];
+      const choice = await vscode.window.showInformationMessage(
+        `extmsg participant: ${summary}`,
+        ...actions,
+      );
+      if (choice === 'Copy Callback URL' && url) {
+        await vscode.env.clipboard.writeText(url);
+      } else if (choice === 'Show Log') {
+        output.show(true);
+      }
+    }),
     // React to settings changes. API settings (poll/backoff are fixed at
     // construction) require recreating the manager; the dashboard URL only needs
     // the projected tab re-rendered.
@@ -247,6 +323,8 @@ export function activate(context: vscode.ExtensionContext): void {
         store.dispose();
       },
     },
+    // Unregister the adapter and stop the callback service on deactivate.
+    { dispose: () => void participant.dispose() },
   );
 }
 
