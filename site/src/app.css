@@ -1,0 +1,212 @@
+@import 'tailwindcss';
+
+/* =========================================================================
+   GasCity Cockpit — design tokens
+   System: blackrim "Working Lab Notebook" (Inter + JetBrains Mono, square
+   corners, 1px hairline structure, flat-by-default) carried over wholesale,
+   with the Cockpit's own *ignition azure* accent in place of Armada Blue.
+   Reasoned in OKLCH. Two themes: dark is primary, light is full fidelity.
+   ========================================================================= */
+
+:root {
+	/* Cockpit signature accent — ignition azure (distinct from blackrim's indigo) */
+	--ignition: oklch(0.72 0.152 228);
+	--ignition-lift: oklch(0.8 0.14 228);
+	--ignition-deep: oklch(0.52 0.12 232);
+
+	/* Runtime-signal colors — used ONLY in terminal / status contexts, never decoration */
+	--signal-amber: oklch(0.82 0.14 76);
+	--signal-red: oklch(0.68 0.2 22);
+	--signal-green: oklch(0.88 0.18 158);
+
+	/* macOS traffic lights — literal quotation, never rebranded */
+	--mac-red: #ff5f57;
+	--mac-amber: #febc2e;
+	--mac-green: #28c840;
+}
+
+/* ---- Dark theme (primary) ---- */
+:root,
+.dark {
+	--bg: oklch(0.15 0.014 245);
+	--surface: oklch(0.188 0.018 244);
+	--lifted: oklch(0.236 0.022 243);
+	--hairline: oklch(0.31 0.02 245);
+	--hairline-strong: oklch(0.42 0.028 245);
+	--ink: oklch(0.975 0.006 250);
+	--mute: oklch(0.745 0.028 250);
+	--caption: oklch(0.57 0.032 252);
+	--accent: var(--ignition);
+	--accent-strong: var(--ignition-lift);
+	--grid-line: oklch(0.72 0.152 228 / 0.055);
+	--halo-ring: oklch(0.72 0.152 228 / 0.1);
+	--glow: oklch(0.72 0.152 228 / 0.16);
+	color-scheme: dark;
+}
+
+/* ---- Light theme (full fidelity, not an afterthought) ---- */
+.light {
+	--bg: oklch(0.976 0.005 95);
+	--surface: oklch(0.945 0.006 95);
+	--lifted: oklch(0.915 0.009 95);
+	--hairline: oklch(0.86 0.01 95);
+	--hairline-strong: oklch(0.76 0.015 95);
+	--ink: oklch(0.22 0.022 245);
+	--mute: oklch(0.41 0.03 252);
+	--caption: oklch(0.55 0.03 252);
+	--accent: oklch(0.56 0.16 236);
+	--accent-strong: oklch(0.5 0.16 236);
+	--grid-line: oklch(0.56 0.16 236 / 0.06);
+	--halo-ring: oklch(0.56 0.16 236 / 0.14);
+	--glow: oklch(0.56 0.16 236 / 0.12);
+	color-scheme: light;
+}
+
+/* ---- Map tokens into Tailwind v4 so utilities resolve the live CSS vars ---- */
+@theme inline {
+	--color-bg: var(--bg);
+	--color-surface: var(--surface);
+	--color-lifted: var(--lifted);
+	--color-hairline: var(--hairline);
+	--color-hairline-strong: var(--hairline-strong);
+	--color-ink: var(--ink);
+	--color-mute: var(--mute);
+	--color-caption: var(--caption);
+	--color-accent: var(--accent);
+	--color-accent-strong: var(--accent-strong);
+	--color-signal-amber: var(--signal-amber);
+	--color-signal-red: var(--signal-red);
+	--color-signal-green: var(--signal-green);
+
+	--font-sans:
+		'Inter Variable', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	--font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+	--radius-none: 0px;
+	--radius-code: 4px;
+
+	/* fluid display scale — ratio ≥1.25, hero ceiling ~84px */
+	--text-display: clamp(2.75rem, 1.6rem + 5.4vw, 5.25rem);
+	--text-headline: clamp(2rem, 1.3rem + 3.2vw, 3.5rem);
+	--text-title: clamp(1.5rem, 1.2rem + 1.6vw, 2.25rem);
+	--text-lead: clamp(1.125rem, 1.02rem + 0.7vw, 1.375rem);
+
+	--ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+	--ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+
+	/* semantic z-scale */
+	--z-sticky: 30;
+	--z-nav: 40;
+	--z-overlay: 50;
+}
+
+/* ---- Base ---- */
+*,
+*::before,
+*::after {
+	border-color: var(--hairline);
+}
+
+html {
+	scroll-behavior: smooth;
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	background: var(--bg);
+	color: var(--mute);
+	font-family: var(--font-sans);
+	font-size: 1.0625rem;
+	line-height: 1.6;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-rendering: optimizeLegibility;
+	font-feature-settings: 'cv11', 'ss03';
+	overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4 {
+	color: var(--ink);
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	line-height: 1.1;
+	text-wrap: balance;
+}
+
+p {
+	text-wrap: pretty;
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+::selection {
+	background: var(--accent);
+	color: var(--bg);
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+	width: 12px;
+	height: 12px;
+}
+::-webkit-scrollbar-track {
+	background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+	background: var(--hairline-strong);
+	border: 3px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover {
+	background: var(--caption);
+}
+
+/* ---- Shared primitives ---- */
+.shell {
+	width: 100%;
+	max-width: 76rem;
+	margin-inline: auto;
+	padding-inline: clamp(1.25rem, 4vw, 3rem);
+}
+
+.eyebrow {
+	font-family: var(--font-mono);
+	font-size: 0.8125rem;
+	font-weight: 500;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--accent);
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5em;
+}
+.eyebrow::before {
+	content: '/';
+	color: var(--caption);
+}
+
+.hairline {
+	border: 1px solid var(--hairline);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.001ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.001ms !important;
+	}
+}
