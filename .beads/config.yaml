@@ -1,0 +1,8 @@
+issue_prefix: cockpit
+issue-prefix: cockpit
+dolt.auto-start: false
+dolt:
+  disable-event-flush: true
+export.auto: false
+gc.endpoint_origin: inherited_city
+gc.endpoint_status: verified
