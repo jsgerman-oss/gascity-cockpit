@@ -229,6 +229,64 @@ export function renderGraphSvg(graph: DepGraph, layout: GraphLayout = layerGraph
   ].join("");
 }
 
+export interface GraphWebviewHtmlOptions {
+  /** The graph body to embed: an SVG from {@link renderGraphSvg}, or an error fragment. */
+  body: string;
+  /** Per-load nonce; the only script allowed to run (CSP `script-src`). */
+  nonce: string;
+  /** `webview.cspSource` — the origin styles and images may load from. */
+  cspSource: string;
+}
+
+/**
+ * Wrap a rendered graph {@link renderGraphSvg} body in the CSP-locked webview
+ * document shell: theme-driven styling plus a script that opens a bead on click
+ * or Enter/Space (the SVG nodes are `role=button` + `tabindex=0`).
+ *
+ * Pure (string in, string out) so the theming + a11y wiring is unit-tested
+ * without a `vscode.Webview` (PRD Testing Decisions, Seam 2); `../views/beadsExplorer.ts`
+ * supplies the per-load nonce and `webview.cspSource`.
+ */
+export function renderGraphWebviewHtml(opts: GraphWebviewHtmlOptions): string {
+  const { body, nonce, cspSource } = opts;
+  const csp = [
+    "default-src 'none'",
+    `style-src ${cspSource} 'unsafe-inline'`,
+    `img-src ${cspSource} data:`,
+    `script-src 'nonce-${nonce}'`,
+  ].join("; ");
+  return [
+    "<!DOCTYPE html>",
+    '<html lang="en"><head><meta charset="utf-8">',
+    `<meta http-equiv="Content-Security-Policy" content="${csp}">`,
+    "<style>",
+    "body { padding: 12px; color: var(--vscode-foreground); font-family: var(--vscode-font-family); }",
+    ".gc-hint { color: var(--vscode-descriptionForeground); margin-bottom: 10px; font-size: 12px; }",
+    ".gc-wrap { overflow: auto; }",
+    ".gc-error { color: var(--vscode-errorForeground); }",
+    "</style></head><body>",
+    '<div class="gc-hint">Tab to a bead and press Enter, or click it, to open its detail.</div>',
+    body,
+    `<script nonce="${nonce}">`,
+    "const vscode = acquireVsCodeApi();",
+    "function openFrom(target) {",
+    "  const g = target.closest('[data-id]');",
+    "  if (g) vscode.postMessage({ type: 'open', id: g.getAttribute('data-id') });",
+    "}",
+    "document.addEventListener('click', (e) => openFrom(e.target));",
+    // Keyboard activation: the graph nodes are role=button + tabindex=0, so
+    // Enter/Space must trigger the same open as a click (a11y).
+    "document.addEventListener('keydown', (e) => {",
+    "  if (e.key !== 'Enter' && e.key !== ' ') return;",
+    "  const g = e.target.closest('[data-id]');",
+    "  if (!g) return;",
+    "  e.preventDefault();",
+    "  vscode.postMessage({ type: 'open', id: g.getAttribute('data-id') });",
+    "});",
+    "</script></body></html>",
+  ].join("\n");
+}
+
 function nodeKey(id: string): string {
   return "n_" + id.replace(/[^A-Za-z0-9]/g, "_");
 }

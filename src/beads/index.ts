@@ -51,9 +51,11 @@ export {
   layerGraph,
   renderGraphMermaid,
   renderGraphSvg,
+  renderGraphWebviewHtml,
   type DepEdge,
   type DepGraph,
   type GraphLayout,
+  type GraphWebviewHtmlOptions,
 } from "./graph.ts";
 
 export {

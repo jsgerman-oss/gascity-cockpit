@@ -24,6 +24,7 @@ import {
   GROUP_KEYS,
   priorityLabel,
   renderGraphSvg,
+  renderGraphWebviewHtml,
   type BeadFilters,
   type BeadLeaf,
   type BeadRecord,
@@ -322,42 +323,7 @@ class BeadGraphView {
 
   private html(webview: vscode.Webview, body: string): string {
     const nonce = randomBytes(16).toString("base64");
-    const csp = [
-      "default-src 'none'",
-      `style-src ${webview.cspSource} 'unsafe-inline'`,
-      `img-src ${webview.cspSource} data:`,
-      `script-src 'nonce-${nonce}'`,
-    ].join("; ");
-    return [
-      "<!DOCTYPE html>",
-      '<html lang="en"><head><meta charset="utf-8">',
-      `<meta http-equiv="Content-Security-Policy" content="${csp}">`,
-      "<style>",
-      "body { padding: 12px; color: var(--vscode-foreground); font-family: var(--vscode-font-family); }",
-      ".gc-hint { color: var(--vscode-descriptionForeground); margin-bottom: 10px; font-size: 12px; }",
-      ".gc-wrap { overflow: auto; }",
-      ".gc-error { color: var(--vscode-errorForeground); }",
-      "</style></head><body>",
-      '<div class="gc-hint">Tab to a bead and press Enter, or click it, to open its detail.</div>',
-      body,
-      `<script nonce="${nonce}">`,
-      "const vscode = acquireVsCodeApi();",
-      "function openFrom(target) {",
-      "  const g = target.closest('[data-id]');",
-      "  if (g) vscode.postMessage({ type: 'open', id: g.getAttribute('data-id') });",
-      "}",
-      "document.addEventListener('click', (e) => openFrom(e.target));",
-      // Keyboard activation: the graph nodes are role=button + tabindex=0, so
-      // Enter/Space must trigger the same open as a click (a11y, Phase 3).
-      "document.addEventListener('keydown', (e) => {",
-      "  if (e.key !== 'Enter' && e.key !== ' ') return;",
-      "  const g = e.target.closest('[data-id]');",
-      "  if (!g) return;",
-      "  e.preventDefault();",
-      "  vscode.postMessage({ type: 'open', id: g.getAttribute('data-id') });",
-      "});",
-      "</script></body></html>",
-    ].join("\n");
+    return renderGraphWebviewHtml({ body, nonce, cspSource: webview.cspSource });
   }
 
   dispose(): void {

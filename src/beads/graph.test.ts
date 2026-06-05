@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildDependencyGraph, layerGraph, renderGraphMermaid, renderGraphSvg } from "./graph";
+import {
+  buildDependencyGraph,
+  layerGraph,
+  renderGraphMermaid,
+  renderGraphSvg,
+  renderGraphWebviewHtml,
+} from "./graph";
 import { makeBead, makeGraph } from "./fixtures";
 
 describe("buildDependencyGraph", () => {
@@ -138,6 +144,29 @@ describe("renderGraphSvg", () => {
     );
     const svg = renderGraphSvg(graph);
     expect((svg.match(/class="gc-edge"/g) ?? []).length).toBe(0);
+  });
+});
+
+describe("renderGraphWebviewHtml", () => {
+  const body = '<div class="gc-wrap"><svg></svg></div>';
+  const html = renderGraphWebviewHtml({ body, nonce: "NONCE123", cspSource: "vscode-resource://abc" });
+
+  it("locks scripts to the nonce under a strict CSP and embeds the body", () => {
+    expect(html.startsWith("<!DOCTYPE html>")).toBe(true);
+    expect(html).toContain('<script nonce="NONCE123">');
+    expect(html).toContain("default-src 'none'");
+    expect(html).toContain("script-src 'nonce-NONCE123'");
+    expect(html).toContain("style-src vscode-resource://abc 'unsafe-inline'");
+    expect(html).toContain("img-src vscode-resource://abc data:");
+    expect(html).toContain(body);
+  });
+
+  it("opens a bead on click and on Enter/Space activation", () => {
+    expect(html).toContain("acquireVsCodeApi()");
+    expect(html).toContain("addEventListener('click'");
+    expect(html).toMatch(/addEventListener\('keydown'/);
+    expect(html).toContain("e.key !== 'Enter' && e.key !== ' '");
+    expect(html).toContain("{ type: 'open', id: g.getAttribute('data-id') }");
   });
 
   it("exposes nodes as focusable, named buttons for keyboard + screen-reader use", () => {
