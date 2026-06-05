@@ -25,6 +25,7 @@ import extmsgFeature from './extmsg.feature.ts';
 import fleetQueryFeature from './fleetQuery.feature.ts';
 import mergeQueueFeature from './mergeQueue.feature.ts';
 import townTopologyFeature from './townTopology.feature.ts';
+import timeTravelFeature from './timeTravel.feature.ts';
 
 /** Every cockpit feature, in activation order. Append new features here. */
 export const FEATURES: readonly CockpitFeature[] = [
@@ -39,6 +40,7 @@ export const FEATURES: readonly CockpitFeature[] = [
   fleetQueryFeature,
   mergeQueueFeature,
   townTopologyFeature,
+  timeTravelFeature,
 ];
 
 /** Activate every registered feature against the shared host. */
