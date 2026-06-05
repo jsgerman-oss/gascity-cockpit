@@ -1,21 +1,106 @@
-# GasCity Cockpit
+<h1 align="center">GasCity Cockpit</h1>
 
-A VS Code extension (the client) plus a thin enabling gascity pack (the city-side
-contract): an adaptive, multi-tab cockpit inside the editor for monitoring and
-driving your gas cities, built entirely on the existing gascity `/v0` HTTP API.
+<p align="center">
+  <strong>Drive your whole fleet of gas cities from inside the editor — one adaptive, multi-tab cockpit, built entirely on the gascity <code>/v0</code> API.</strong>
+</p>
 
-The full product spec is in [`docs/PRD.md`](docs/PRD.md). Planning lives in epic
-**bh-bsmt** (blackrim-hq beads); this rig's build is tracked under epic
-**cockpit-1ll**. This rig owns the extension + pack source.
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-alpha-e0a020?style=for-the-badge" alt="Status: alpha">
+  <img src="https://img.shields.io/badge/VS%20Code-extension-007ACC?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="VS Code extension">
+  <a href="https://github.com/gastownhall/gascity"><img src="https://img.shields.io/badge/Built%20on-Gas%20City%20%2Fv0-c9a84c?style=for-the-badge" alt="Built on Gas City /v0"></a>
+  <img src="https://img.shields.io/badge/version-0.0.1-3b82f6?style=for-the-badge" alt="Version 0.0.1">
+</p>
 
-> **Status: Phase 1.** This repo contains the extension scaffold, the **API
-> discovery + resilience** core (how the extension finds the supervisor API and
-> stays usable as it comes and goes — `gc stop`, supervisor restart), the typed
-> `/v0` client (epic tasks `cockpit-1ll.1` and `cockpit-1ll.2`), and the
-> **Beads explorer** — a multi-city tree with rich status, filter/group, bead
-> detail, and dependency graphs (`cockpit-1ll.5`). The remaining feature
-> surfaces — live status panes, chat, approvals, dashboard projection — are
-> tracked as follow-on beads and build on the seams documented below.
+GasCity Cockpit turns VS Code into a live cockpit for the gas cities you operate. Instead
+of scattering your attention across a terminal (`gc`, `gc bd`, `gc mail`), a separate web
+dashboard, and the editor where the code actually lives, the Cockpit pulls all of it onto
+one adaptive surface — monitoring, the full beads backlog, interactive agent conversations,
+native tool-approvals, and a jump from any bead to the polecat worktree and diff doing the
+work. It is a **pure client** of the gascity `/v0` HTTP API served by the running supervisor
+— the same versioned, self-documenting API the web dashboard already uses — so the expensive
+machinery already exists and the Cockpit stays a thin, well-built window onto it. The full
+product spec is in [`docs/PRD.md`](docs/PRD.md); this rig owns the extension + pack source.
+
+> **New here?** A *gas city* is an orchestrated town of coding agents (a Mayor who
+> coordinates, polecats who execute, witnesses and refineries who keep the work healthy and
+> merged). Gas City — the engine — lives at
+> [gastownhall/gascity](https://github.com/gastownhall/gascity). The Cockpit is how you
+> *watch and drive* one from your editor.
+
+## What You Get Today
+
+Everything below is built and merged — the Cockpit is already a working multi-pane surface:
+
+- **🌲 Beads explorer** — a multi-city tree of every work item: open / ready / in-progress /
+  closed with rich status, filter and group by status / rig / assignee / type / priority,
+  full bead detail, and rendered dependency graphs. (`src/beads`, `src/views`)
+- **📟 Live status panes** — city health, agents, and sessions plus a real-time **event
+  feed** streamed over SSE (`/health` + `/events/stream`), with a Fleet view that updates as
+  your agents work. (`src/status`, `src/discovery`)
+- **💬 Chat with the Mayor** — a structured conversation panel backed by the session
+  transcript / submit / stream API: responses stream as they are produced, and you can send
+  control intents including interrupting the autonomous loop. (`src/chat`)
+- **✍️ Bead authoring** — create, update, close, reopen, assign, edit dependencies, and
+  **dispatch (sling)** beads to a polecat pool, all without leaving the editor. (`src/beads`)
+- **✅ Tool-approval cockpit** — surface pending tool-approval and input prompts across every
+  session, answer them inline, and set permission mode (`/pending`, `/respond`,
+  `/permission-mode`) — no more hunting for the right tmux pane. (`src/chat`, `src/api`)
+- **🖥️ Dashboard projection** — embed ("project") the gascity dashboard directly as a Cockpit
+  tab through a real webview embed contract: CSP/framing, VS Code theme-variable sync,
+  deep-link/route control, and a host↔webview message bridge. (`src/dashboard`)
+- **🧭 Code & worktree navigation** — jump from a bead to its polecat worktree and the diff
+  for the work in flight, and preview/run formulas (e.g. the `tdd` formula) while watching
+  their runs. (`src/code`, `src/formulas`)
+- **🔌 First-class conversation participant** — the editor registers as a durable `extmsg`
+  participant, so agents can address VS Code directly through the same conversation fabric
+  the rest of the town uses. (`src/extmsg`)
+
+Under all of it sits the foundation: a typed, OpenAPI-generated `/v0` client pinned to the
+contract (`src/api`), and a discovery + resilience layer that finds the supervisor and
+survives restarts / `gc stop` (`src/discovery`).
+
+## Where This Is Going
+
+The end state is a single **operator's cockpit** that makes the terminal-plus-browser-plus-editor
+shuffle obsolete: open your editor and *see and steer* your entire fleet in real time —
+every city's health, the whole backlog, every agent conversation, every approval, and the
+exact code in flight — all driven by the existing `/v0` API, with no second tool to reach
+for. The pieces above are the spine of that vision; the work now is depth, polish, and
+reach: richer multi-city fleet management, a tighter monitoring → act → verify loop, and a
+theming / auth / remote story solid enough to run against cities you don't own.
+
+## Ideas We Haven't Explored Yet
+
+The API surface makes a lot possible that we simply haven't built. A non-exhaustive wish
+list — **PRs and proposals very welcome**:
+
+- **Fleet command palette / natural-language queries** — "show failing beads in cockpit"
+  resolving to a structured `/v0` query.
+- **In-editor merge-queue review** — surface refinery PRs with their diff and a one-click
+  approve/merge, closing the bead → polecat → merge loop without leaving the editor.
+- **Cost & tier telemetry** — visualize model-advisor tier decisions and token-budget spend
+  per agent and per bead.
+- **"File a bead from this"** — right-click a code selection to open a bead with `file:line`
+  context auto-attached.
+- **Live town topology** — an SSE-driven graph of controller → mayor → rigs →
+  polecats/witness/refinery, color-coded by health.
+- **Event time-travel** — scrub and replay the event feed to reconstruct exactly what the
+  agents did, for debugging and audit.
+- **Native notifications** — VS Code toasts for escalations, tool-approvals, and mail so
+  nothing waits unseen in a background pane.
+- **Worktree code lens** — annotate files with which bead / polecat is touching them right now.
+- **Companion surfaces** — because everything routes through `/v0`, a web or mobile companion
+  could share the same typed client.
+
+Have an idea that isn't here? That's exactly what the issue tracker is for. 👇
+
+## Help Shape It — File an Issue
+
+This is an early, fast-moving prototype, and the best way to push it forward is to tell us
+where it falls short. **See a rough edge, a missing affordance, or a feature you wish
+existed? [Open an issue](https://github.com/jsgerman-oss/gascity-cockpit/issues).** Bug
+reports, UX papercuts, feature requests, and "why doesn't it just…" questions are all
+genuinely wanted — every issue is a vote on where the Cockpit goes next.
 
 ## Architecture
 
@@ -50,6 +135,9 @@ src/
     graph.ts            dependency graph → layered, themeable SVG / Mermaid
     repository.ts       multi-city fan-out over the bead endpoints
     index.ts            public barrel for the beads core
+  status/ chat/ code/ dashboard/ extmsg/ formulas/
+                        feature domain cores added since Phase 1 — each follows the
+                        same pattern: a `vscode`-free, unit-tested core plus thin glue
   views/                VS Code surfaces (thin glue, kept untested)
     beadsExplorer.ts    tree provider + detail document + graph webview + commands
   test/                 shared test helpers (mock fetch, stream builders)
@@ -154,3 +242,24 @@ Seam 1 runnable in plain Node.
 `dist/extension.js`. The direct `esbuild` used for bundling is on a patched
 line. Clearing the remaining advisories requires a breaking Vitest v4 upgrade,
 deferred until it is stable.
+
+## Documentation
+
+- [PRD](docs/PRD.md) — problem, solution, and full user-story set
+- [API discovery & resilience](docs/api-discovery-and-resilience.md)
+- [Beads explorer](docs/beads-explorer.md)
+- [Live status panes](docs/live-status-panes.md)
+- [Dashboard embed contract](docs/dashboard-embed-contract.md)
+- [Extmsg participant](docs/extmsg-participant.md)
+
+## Contributing
+
+Issues and PRs are welcome — see [Help Shape It](#help-shape-it--file-an-issue) above. The
+feature logic lives behind `vscode`-free domain cores (`src/api`, `src/discovery`, and each
+feature module) and is unit-tested with vitest; the VS Code activation layer
+(`src/extension.ts`) is kept deliberately thin, so most contributions are a self-contained
+module plus a small registration.
+
+---
+
+<p align="center"><sub>Built on <a href="https://github.com/gastownhall/gascity">Gas City</a> · a client of the <code>/v0</code> supervisor API</sub></p>
