@@ -10,6 +10,7 @@
 //
 // Like the rest of `./api` this is provider-agnostic and unit-tested against
 // mock event-stream bodies (PRD Testing Decisions, Seam 1).
+import { bearerAuthHeader } from "./client";
 import { openSSE, type SSEMessage } from "./sse";
 import type { PendingInteraction, Schema } from "./types";
 import type { ConversationTurn, SessionRef } from "./sessions";
@@ -41,10 +42,6 @@ export type SessionStreamEvent =
   | { kind: "pending"; pending: PendingInteraction }
   | { kind: "heartbeat"; timestamp: string }
   | { kind: "unknown"; event: string; data: unknown };
-
-function authHeaders(token?: string | null): Record<string, string> | undefined {
-  return token ? { Authorization: `Bearer ${token}` } : undefined;
-}
 
 /** Parse JSON, returning `undefined` instead of throwing on malformed data. */
 function parseJson<T>(raw: string): T | undefined {
@@ -124,7 +121,7 @@ export async function* streamSession(
     `/session/${encodeURIComponent(params.id)}/stream`;
   for await (const message of openSSE(url, {
     ...(options.fetch ? { fetch: options.fetch } : {}),
-    ...(authHeaders(endpoint.token) ? { headers: authHeaders(endpoint.token) } : {}),
+    ...(bearerAuthHeader(endpoint.token) ? { headers: bearerAuthHeader(endpoint.token) } : {}),
     ...(options.signal ? { signal: options.signal } : {}),
     ...(options.lastEventId ? { lastEventId: options.lastEventId } : {}),
     ...(options.format ? { query: { format: options.format } } : {}),
@@ -176,7 +173,7 @@ export async function awaitSubmitOutcome(
   const url = `${endpoint.baseUrl}/v0/city/${encodeURIComponent(params.cityName)}/events/stream`;
   const stream = openSSE(url, {
     ...(options.fetch ? { fetch: options.fetch } : {}),
-    ...(authHeaders(endpoint.token) ? { headers: authHeaders(endpoint.token) } : {}),
+    ...(bearerAuthHeader(endpoint.token) ? { headers: bearerAuthHeader(endpoint.token) } : {}),
     ...(options.signal ? { signal: options.signal } : {}),
     ...(params.eventCursor ? { query: { after_seq: params.eventCursor } } : {}),
   });

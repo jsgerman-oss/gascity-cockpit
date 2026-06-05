@@ -70,16 +70,26 @@ security, not the ability to target a URL.)
 A bearer token flows end-to-end already:
 
 - **Source:** `gascityCockpit.api.token` setting (read in
-  [`buildDiscoveryInputs`](../src/extension.ts)) or a `token` field on a discovery
+  [`buildDiscoveryInputs`](../src/host/host.ts)) or a `token` field on a discovery
   descriptor ([`parseDescriptor`](../src/discovery/descriptor.ts)).
 - **Carried on the endpoint:** `ApiEndpoint.token` (`src/discovery/types.ts`).
-- **Applied to every client:** each `createCockpitClient({ headers: { Authorization: \`Bearer ${token}\` } })`
-  call (in `src/extension.ts`, `src/chat/open-chat.ts`, and the live-status /
-  extmsg wiring) injects the token as an `Authorization` header when present.
+- **Built into a header in one place:** [`bearerAuthHeader`](../src/api/client.ts)
+  is the single seam that turns a token into `Authorization: Bearer <token>` (or
+  nothing, on the unauthenticated path).
+- **Applied everywhere through that seam:** the host's client factory
+  ([`createClient`](../src/host/host.ts)) threads `bearerAuthHeader` into every
+  `createCockpitClient` it builds (beads, approvals, formulas, extmsg, the
+  connection check). The surfaces that construct their own client or stream — the
+  chat panel (`src/chat/open-chat.ts`), the per-session / city SSE readers
+  (`src/api/session-stream.ts`), and the live Fleet/event stream wiring
+  (`src/features/status.feature.ts`) — call the same helper. The discovery-layer
+  `/health` probe (`src/discovery/health.ts`) carries the same token independently,
+  keeping discovery free of an `src/api` dependency.
 
-So the auth *transport* (a bearer header on every `/v0` request) is wired. What a
-remote story would add is the auth *model* behind that token: issuance, scope,
-rotation, expiry, and a server that enforces them.
+So the auth *transport* (a bearer header on every `/v0` request) is wired, and it
+funnels through a single construction point. What a remote story would add is the
+auth *model* behind that token: issuance, scope, rotation, expiry, and a server
+that enforces them.
 
 ### 3. Dashboard projection keeps the token off the wire — `src/dashboard`
 
@@ -97,10 +107,10 @@ This is a map for later, not a v1 deliverable:
    requirement). The Cockpit's `fetch`-based client already speaks `https`; the
    gap is server-side.
 2. **A real token model.** Replace the single shared `api.token` with issued,
-   scoped, expiring credentials. The injection point (`Authorization` header in
-   `createCockpitClient`) and the storage seam (settings / descriptor) stay; their
-   *contents* and lifecycle change. VS Code's `SecretStorage` would replace the
-   plain `api.token` setting for anything sensitive.
+   scoped, expiring credentials. The injection point (`bearerAuthHeader` in
+   `src/api`) and the storage seam (settings / descriptor) stay; their *contents*
+   and lifecycle change. VS Code's `SecretStorage` would replace the plain
+   `api.token` setting for anything sensitive.
 3. **Origin / CORS policy.** A remote API must decide which origins (including the
    webview) may call it; today loopback sidesteps this.
 4. **Descriptor producer.** Rung 2 of discovery is consumer-ready but has no

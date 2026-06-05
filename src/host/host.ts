@@ -26,6 +26,7 @@ import {
   type Logger,
 } from '../discovery/index.ts';
 import {
+  bearerAuthHeader,
   checkApiCompatibility,
   createCockpitClient,
   PINNED_API_VERSION,
@@ -126,7 +127,7 @@ class CockpitHost implements FeatureHost {
     return createCockpitClient({
       baseUrl: endpoint.baseUrl,
       timeoutMs,
-      ...(endpoint.token ? { headers: { Authorization: `Bearer ${endpoint.token}` } } : {}),
+      headers: bearerAuthHeader(endpoint.token),
     });
   }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createCockpitClient, normalizeError, normalizeBaseUrl, withTimeout } from "./client";
+import { bearerAuthHeader, createCockpitClient, normalizeError, normalizeBaseUrl, withTimeout } from "./client";
 import { jsonResponse, mockFetch, problemResponse } from "../test/helpers";
 import type { SupervisorHealth } from "./types";
 
@@ -84,6 +84,42 @@ describe("createCockpitClient", () => {
 
     expect(data).toBeUndefined();
     expect(error).toMatchObject({ title: "Not Found", status: 404 });
+  });
+});
+
+describe("bearerAuthHeader", () => {
+  it("builds an Authorization header for a token", () => {
+    expect(bearerAuthHeader("sekret")).toEqual({ Authorization: "Bearer sekret" });
+  });
+
+  it("returns undefined when there is no token (null / undefined / empty)", () => {
+    expect(bearerAuthHeader(null)).toBeUndefined();
+    expect(bearerAuthHeader(undefined)).toBeUndefined();
+    expect(bearerAuthHeader("")).toBeUndefined();
+  });
+
+  it("threads the bearer token onto every request when present", async () => {
+    const { fetch, calls } = mockFetch(() => jsonResponse({}));
+    const client = createCockpitClient({
+      baseUrl: "http://api.test",
+      fetch,
+      headers: bearerAuthHeader("sekret"),
+    });
+    await client.GET("/health");
+    expect(calls[0].headers.get("authorization")).toBe("Bearer sekret");
+  });
+
+  it("sends no Authorization header on the unauthenticated path", async () => {
+    // The clean `headers: bearerAuthHeader(token)` call form relies on an absent
+    // token spreading to nothing rather than emitting an empty/invalid header.
+    const { fetch, calls } = mockFetch(() => jsonResponse({}));
+    const client = createCockpitClient({
+      baseUrl: "http://api.test",
+      fetch,
+      headers: bearerAuthHeader(null),
+    });
+    await client.GET("/health");
+    expect(calls[0].headers.get("authorization")).toBeNull();
   });
 });
 

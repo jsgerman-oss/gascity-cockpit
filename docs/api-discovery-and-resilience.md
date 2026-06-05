@@ -232,6 +232,6 @@ consumer degrades safely whatever is chosen.
 | `/health` parse + probe | `src/discovery/health.ts` | `health.test.ts` |
 | Discovery precedence chain | `src/discovery/discovery.ts` | `discovery.test.ts` |
 | Connection state machine + backoff | `src/discovery/connection.ts` | `connection.test.ts` |
-| VS Code glue (status bar, commands, settings) | `src/extension.ts` | thin; excluded per PRD |
+| VS Code glue (status bar, commands, settings) | `src/host/host.ts` (`src/extension.ts` activates) | thin; excluded per PRD |
 
 Run the seam tests with `npm test` (`node --test`, no test dependencies).

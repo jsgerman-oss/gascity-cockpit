@@ -6,7 +6,7 @@
 // falls back to a text box when the list can't be fetched.
 import * as vscode from "vscode";
 import * as path from "node:path";
-import { createCockpitClient, listCities, listSessions, type CockpitClient } from "../api/index.ts";
+import { bearerAuthHeader, createCockpitClient, listCities, listSessions, type CockpitClient } from "../api/index.ts";
 import { DEFAULT_SUPERVISOR_BASE_URL, type ApiEndpoint, type Logger } from "../discovery/index.ts";
 import { ChatPanel } from "./chat-panel.ts";
 import { cityPickLabel, rankCitiesForPicker } from "./city-picker.ts";
@@ -28,7 +28,7 @@ export async function openChat(args: OpenChatArgs): Promise<void> {
   const client = createCockpitClient({
     baseUrl,
     timeoutMs: 5000,
-    ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+    headers: bearerAuthHeader(token),
   });
 
   const cityName = args.preset?.cityName ?? (await pickCity(client, args.log));

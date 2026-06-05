@@ -7,6 +7,7 @@
  * tearing down when the API goes away. `liveKey` dedupes the connected endpoint
  * so routine health polls don't churn the stream.
  */
+import { bearerAuthHeader } from '../api/index.ts';
 import {
   FleetStatusStore,
   LiveStatus,
@@ -26,7 +27,7 @@ const statusFeature: CockpitFeature = {
       createClient: (ep) => host.createClient(ep),
       createStream: (ep) =>
         new SupervisorEventStream(ep.baseUrl, {
-          ...(ep.token ? { headers: { Authorization: `Bearer ${ep.token}` } } : {}),
+          headers: bearerAuthHeader(ep.token),
           log: host.log,
         }),
       log: host.log,

@@ -63,6 +63,25 @@ export function createCockpitClient(options: CockpitClientOptions): CockpitClien
   });
 }
 
+/**
+ * The `Authorization` header bag for a bearer token, or `undefined` when there
+ * is no token (so it spreads/assigns to nothing on the unauthenticated path).
+ *
+ * This is the single place the Cockpit constructs the `Bearer` scheme for /v0
+ * clients and streams — every request/response client (`createCockpitClient`),
+ * the chat panel, and the SSE readers thread their token through here. It is the
+ * one injection point a future auth model would change: when the token stops
+ * being a single shared secret and becomes issued/scoped/rotated credentials,
+ * its *contents* change but this seam does not move (see docs/remote-and-auth.md).
+ *
+ * The discovery-layer `/health` probe (`src/discovery/health.ts`) deliberately
+ * carries its own header and does not import this, keeping discovery free of an
+ * `src/api` dependency.
+ */
+export function bearerAuthHeader(token?: string | null): Record<string, string> | undefined {
+  return token ? { Authorization: `Bearer ${token}` } : undefined;
+}
+
 /** A request id the supervisor stamps on every response, for log correlation. */
 export const REQUEST_ID_HEADER = "X-GC-Request-Id";
 
