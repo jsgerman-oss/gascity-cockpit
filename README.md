@@ -30,7 +30,11 @@ product spec is in [`docs/PRD.md`](docs/PRD.md); this rig owns the extension + p
 
 ## What You Get Today
 
-Everything below is built and merged — the Cockpit is already a working multi-pane surface:
+Everything below is built and merged. The Cockpit is a working multi-pane surface — fully
+keyboard-navigable and theme-aware (light / dark / high-contrast), with accessible names and
+`aria-live` announcements throughout.
+
+### The essentials
 
 - **🌲 Beads explorer** — a multi-city tree of every work item: open / ready / in-progress /
   closed with rich status, filter and group by status / rig / assignee / type / priority,
@@ -56,9 +60,32 @@ Everything below is built and merged — the Cockpit is already a working multi-
   participant, so agents can address VS Code directly through the same conversation fabric
   the rest of the town uses. (`src/extmsg`)
 
+### Power tools
+
+- **⌨️ Fleet command palette** — natural-language queries (e.g. "show failing beads in
+  cockpit") resolved into structured `/v0` queries across every city. (`src/fleet`)
+- **🔀 In-editor merge-queue review** — surface refinery PRs with their diff and approve /
+  merge in one click, closing the bead → polecat → merge loop without leaving the editor.
+  (`src/mergeQueue`)
+- **💸 Cost & tier telemetry** — model-advisor tier decisions and token-budget spend,
+  visualized per agent and per bead. (`src/telemetry`)
+- **🏷️ File a bead from a selection** — right-click any code selection to open a bead with
+  `file:line` context auto-attached. (`src/features/beadFromSelection`)
+- **🗺️ Live town topology** — an SSE-driven graph of controller → mayor → rigs →
+  polecats / witness / refinery, color-coded by health. (`src/town`)
+- **⏪ Event time-travel** — scrub and replay the event feed to reconstruct exactly what the
+  agents did, for debugging and audit. (`src/timetravel`)
+- **🔔 Native notifications** — VS Code toasts for escalations, tool-approvals, and mail, so
+  nothing waits unseen in a background pane. (`src/notifications`)
+- **🔎 Worktree code lens** — files annotated inline with the bead / polecat touching them
+  right now. (`src/features/worktreeLens`)
+- **📱 Companion surfaces** *(spike)* — groundwork and portability guarantees for a future
+  web / mobile companion sharing the same typed `/v0` client. (`docs/companion-surfaces.md`)
+
 Under all of it sits the foundation: a typed, OpenAPI-generated `/v0` client pinned to the
-contract (`src/api`), and a discovery + resilience layer that finds the supervisor and
-survives restarts / `gc stop` (`src/discovery`).
+contract (`src/api`), a discovery + resilience layer that survives restarts / `gc stop`
+(`src/discovery`), and a feature-registry host so every surface above is a self-contained,
+parallel-mergeable module (`src/host`, `src/features`).
 
 ## Where This Is Going
 
@@ -70,28 +97,25 @@ for. The pieces above are the spine of that vision; the work now is depth, polis
 reach: richer multi-city fleet management, a tighter monitoring → act → verify loop, and a
 theming / auth / remote story solid enough to run against cities you don't own.
 
-## Ideas We Haven't Explored Yet
+## What's Next
 
-The API surface makes a lot possible that we simply haven't built. A non-exhaustive wish
-list — **PRs and proposals very welcome**:
+The entire wishlist from this README's first cut **shipped** — it became the Power tools
+above. What's on the horizon now:
 
-- **Fleet command palette / natural-language queries** — "show failing beads in cockpit"
-  resolving to a structured `/v0` query.
-- **In-editor merge-queue review** — surface refinery PRs with their diff and a one-click
-  approve/merge, closing the bead → polecat → merge loop without leaving the editor.
-- **Cost & tier telemetry** — visualize model-advisor tier decisions and token-budget spend
-  per agent and per bead.
-- **"File a bead from this"** — right-click a code selection to open a bead with `file:line`
-  context auto-attached.
-- **Live town topology** — an SSE-driven graph of controller → mayor → rigs →
-  polecats/witness/refinery, color-coded by health.
-- **Event time-travel** — scrub and replay the event feed to reconstruct exactly what the
-  agents did, for debugging and audit.
-- **Native notifications** — VS Code toasts for escalations, tool-approvals, and mail so
-  nothing waits unseen in a background pane.
-- **Worktree code lens** — annotate files with which bead / polecat is touching them right now.
-- **Companion surfaces** — because everything routes through `/v0`, a web or mobile companion
-  could share the same typed client.
+- **Telemetry, end to end** — the cost/tier pane is in, but full fidelity needs `/v0` to
+  expose model-advisor and token-budget data; an upstream Gas City API change is filed.
+- **Companion surfaces, for real** — the spike proved the core is portable; next is an actual
+  web / mobile companion on the shared typed client.
+- **Beyond localhost** — a remote + auth story so you can drive cities you don't own (v1 is
+  localhost-only by design; the seams are already in place).
+- **Consistent edges** — unified empty / loading / error states across every pane (in flight).
+
+And a fresh batch we *haven't* started — **proposals very welcome**:
+
+- **Multi-operator cockpit** — shared, presence-aware sessions over the same city.
+- **Saved views & custom dashboards** — pin the queries and panes you live in.
+- **Metrics over time** — throughput, cycle time, and reject rates per rig and per agent.
+- **Replay → regression test** — turn an event-time-travel replay into a saved scenario test.
 
 Have an idea that isn't here? That's exactly what the issue tracker is for. 👇
 
