@@ -1,0 +1,41 @@
+{
+  "commands": [
+    {
+      "command": "gascityCockpit.notifications.showPending",
+      "title": "GasCity Cockpit: Show Pending Approvals",
+      "category": "GasCity Cockpit",
+      "icon": "$(bell)"
+    }
+  ],
+  "configuration": {
+    "title": "GasCity Cockpit",
+    "properties": {
+      "gascityCockpit.notifications.enabled": {
+        "type": "boolean",
+        "default": true,
+        "markdownDescription": "Master switch for native notifications. When off, no toasts are shown for escalations, tool-approvals, or mail."
+      },
+      "gascityCockpit.notifications.escalations": {
+        "type": "boolean",
+        "default": true,
+        "markdownDescription": "Show a warning toast when an agent needs attention — a session crashes, strands, is quarantined, fails to start/drain, or an order/request fails."
+      },
+      "gascityCockpit.notifications.approvals": {
+        "type": "boolean",
+        "default": true,
+        "markdownDescription": "Show a toast when an agent pauses for a tool-approval or asks a question, with inline Allow/Deny for tool-approvals. Aggregated across every running city."
+      },
+      "gascityCockpit.notifications.mail": {
+        "type": "boolean",
+        "default": true,
+        "markdownDescription": "Show an info toast when new mail is sent on the fleet. Covers all fleet mail traffic — disable if it is too chatty."
+      },
+      "gascityCockpit.notifications.approvalPollSeconds": {
+        "type": "number",
+        "default": 15,
+        "minimum": 5,
+        "markdownDescription": "How often (seconds) to poll `/v0/city/{city}/pending` for new approvals as a backstop, in addition to polling immediately after each session change."
+      }
+    }
+  }
+}

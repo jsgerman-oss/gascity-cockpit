@@ -143,7 +143,7 @@ src/
     graph.ts            dependency graph → layered, themeable SVG / Mermaid
     repository.ts       multi-city fan-out over the bead endpoints
     index.ts            public barrel for the beads core
-  status/ chat/ code/ dashboard/ extmsg/ formulas/
+  status/ chat/ code/ dashboard/ extmsg/ formulas/ notifications/
                         feature domain cores added since Phase 1 — each follows the
                         same pattern: a `vscode`-free, unit-tested core plus thin glue
   views/                VS Code surfaces (thin glue, kept untested)
@@ -261,6 +261,7 @@ deferred until it is stable.
 - [Dashboard embed contract](docs/dashboard-embed-contract.md)
 - [Extmsg participant](docs/extmsg-participant.md)
 - [Merge queue review](docs/merge-queue-review.md)
+- [Native notifications](docs/notifications.md)
 
 ## Contributing
 
