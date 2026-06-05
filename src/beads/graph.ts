@@ -287,6 +287,13 @@ export function renderGraphWebviewHtml(opts: GraphWebviewHtmlOptions): string {
     "  e.preventDefault();",
     "  vscode.postMessage({ type: 'open', id: g.getAttribute('data-id') });",
     "});",
+    // Focus order: Tab can move focus to a node scrolled out of the .gc-wrap
+    // viewport. Pull it back into view so the theme-driven focus ring stays
+    // visible — without this a keyboard user can lose track of where they are.
+    "document.addEventListener('focusin', (e) => {",
+    "  const g = e.target.closest('[data-id]');",
+    "  if (g && typeof g.scrollIntoView === 'function') g.scrollIntoView({ block: 'nearest', inline: 'nearest' });",
+    "});",
     "</script></body></html>",
   ].join("\n");
 }

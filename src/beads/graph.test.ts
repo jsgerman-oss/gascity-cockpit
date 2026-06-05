@@ -173,6 +173,11 @@ describe("renderGraphWebviewHtml", () => {
     expect(html).toContain("color-scheme: light dark");
   });
 
+  it("scrolls the keyboard-focused node back into the scroll viewport", () => {
+    expect(html).toContain("addEventListener('focusin'");
+    expect(html).toContain("scrollIntoView({ block: 'nearest', inline: 'nearest' })");
+  });
+
   it("exposes nodes as focusable, named buttons for keyboard + screen-reader use", () => {
     const graph = buildDependencyGraph(
       makeGraph({ root: makeBead({ id: "root", title: "Root bead", status: "open" }), beads: [makeBead({ id: "root", title: "Root bead" })] }),
