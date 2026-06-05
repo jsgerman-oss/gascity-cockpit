@@ -112,6 +112,25 @@ describe('LiveStatus', () => {
     expect(store.state.cities.map((c) => c.name)).toEqual(['alpha']);
   });
 
+  it('marks the store loading on connect and clears it once the snapshot lands', async () => {
+    const { store, live } = setup();
+    live.connect({ baseUrl: 'http://api.test' });
+    // Synchronously after connect, the snapshot is still in flight.
+    expect(store.state.loading).toBe(true);
+
+    await tick();
+    expect(store.state.loading).toBe(false);
+  });
+
+  it('clears the loading flag when a connection is torn down before it loads', () => {
+    const { store, live } = setup();
+    live.connect({ baseUrl: 'http://api.test' });
+    expect(store.state.loading).toBe(true);
+
+    live.disconnect();
+    expect(store.state.loading).toBe(false);
+  });
+
   it('forwards stream status into the store', async () => {
     const { store, fake, live } = setup();
     live.connect({ baseUrl: 'http://api.test' });

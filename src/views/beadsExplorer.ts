@@ -35,6 +35,7 @@ import {
   type GroupKey,
   type GroupNode,
 } from "../beads/index.ts";
+import { CITY_PLACEHOLDER } from "../cities/index.ts";
 
 const VIEW_ID = "gascityCockpit.beads";
 const BEAD_SCHEME = "gascity-bead";
@@ -67,7 +68,7 @@ class BeadsTreeDataProvider implements vscode.TreeDataProvider<BeadTreeNode> {
   private readonly emitter = new vscode.EventEmitter<void>();
   readonly onDidChangeTreeData = this.emitter.event;
 
-  private roots: BeadTreeNode[] = [message("loading", "Connecting to supervisor…", "loading~spin")];
+  private roots: BeadTreeNode[] = [message("loading", CITY_PLACEHOLDER.connecting, "loading~spin")];
   private data: ExplorerData | null = null;
   private lastError: string | null = null;
   private spec: BeadViewSpec;

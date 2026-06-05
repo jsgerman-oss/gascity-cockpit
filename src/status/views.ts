@@ -6,6 +6,7 @@
 // and an "Event Feed" tree — and re-renders on the store's single change signal.
 // All label/description/severity logic lives in the tested `format.ts`.
 import * as vscode from 'vscode';
+import { CITY_PLACEHOLDER } from '../cities/index.ts';
 import type { Disposable } from '../discovery/index.ts';
 import {
   accessibleAgentLabel,
@@ -44,7 +45,7 @@ type FleetNode =
   | { kind: 'group'; cityName: string; group: 'agents' | 'sessions' }
   | { kind: 'agent'; cityName: string; agent: AgentResponse }
   | { kind: 'session'; cityName: string; session: SessionResponse }
-  | { kind: 'notice'; id: string; label: string; description?: string };
+  | { kind: 'notice'; id: string; label: string; description?: string; icon?: string };
 
 type EventNode =
   | { kind: 'event'; event: FleetEvent }
@@ -92,7 +93,13 @@ export class FleetTreeProvider implements vscode.TreeDataProvider<FleetNode>, Di
       }
       for (const city of state.cities) roots.push({ kind: 'city', city });
       if (!state.cities.length && !state.lastError) {
-        roots.push({ kind: 'notice', id: 'no-cities', label: 'No cities registered' });
+        // While the first snapshot is in flight, say so rather than claiming
+        // there are no cities (cockpit-1ll.16). Shared copy with the Beads pane.
+        roots.push(
+          state.loading
+            ? { kind: 'notice', id: 'loading', label: CITY_PLACEHOLDER.connecting, icon: 'loading~spin' }
+            : { kind: 'notice', id: 'no-cities', label: CITY_PLACEHOLDER.noCities },
+        );
       }
       for (const err of state.partialErrors) {
         roots.push({ kind: 'notice', id: `partial:${err}`, label: err, description: 'partial' });
@@ -191,7 +198,7 @@ export class FleetTreeProvider implements vscode.TreeDataProvider<FleetNode>, Di
         const item = new vscode.TreeItem(node.label, None);
         item.id = `notice:${node.id}`;
         if (node.description) item.description = node.description;
-        item.iconPath = new vscode.ThemeIcon('info');
+        item.iconPath = new vscode.ThemeIcon(node.icon ?? 'info');
         item.contextValue = 'gascityNotice';
         item.accessibilityInformation = { label: node.description ? `${node.label}, ${node.description}` : node.label };
         return item;

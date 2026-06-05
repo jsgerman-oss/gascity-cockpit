@@ -80,4 +80,10 @@ export interface FleetStatusState {
   eventStream: EventStreamStatus | null;
   /** A fatal-ish error (e.g. snapshot failed / API unavailable), or null. */
   lastError: string | null;
+  /**
+   * True between connecting to a supervisor and the first snapshot (or error)
+   * landing. Lets the Fleet tree show "connecting…" instead of a premature
+   * "no cities" while the initial fetch is in flight (cockpit-1ll.16).
+   */
+  loading: boolean;
 }

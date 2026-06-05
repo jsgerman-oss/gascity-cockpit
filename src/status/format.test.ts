@@ -96,6 +96,10 @@ describe('city formatting', () => {
     expect(cityDescription(city({ running: false, status: 'suspended' }))).toBe('stopped · suspended');
   });
 
+  it('describes an errored city tersely', () => {
+    expect(cityDescription(city({ error: 'boom' }))).toBe('error');
+  });
+
   it('flags errored cities', () => {
     expect(cityStatusKind(city({ error: 'boom' }))).toBe('error');
     expect(cityStatusKind(city({ running: false }))).toBe('off');
@@ -192,9 +196,9 @@ describe('accessible labels', () => {
     expect(accessibleSupervisorLabel(null)).toBe('Supervisor — unknown, not connected');
   });
 
-  it('names a city and appends an error marker when present', () => {
+  it('names a city and spells out its error for assistive tech', () => {
     expect(accessibleCityLabel(city({ status: 'healthy' }))).toBe('City blackrim-hq, healthy');
-    expect(accessibleCityLabel(city({ error: 'boom' }))).toBe('City blackrim-hq, running, error');
+    expect(accessibleCityLabel(city({ error: 'boom' }))).toBe('City blackrim-hq, error: boom');
   });
 
   it('spells out an agent and its unavailability reason', () => {

@@ -25,6 +25,7 @@ import {
   priorityLabel,
   priorityRank,
 } from "./status.ts";
+import { CITY_PLACEHOLDER } from "../cities/index.ts";
 
 export interface BeadViewSpec {
   groupBy: GroupKey;
@@ -224,7 +225,7 @@ export function buildBeadTree(
   now: Date = new Date(),
 ): BeadTreeNode[] {
   if (data.cities.length === 0) {
-    return [{ kind: "message", id: "msg:no-cities", label: "No cities found", icon: "info" }];
+    return [{ kind: "message", id: "msg:no-cities", label: CITY_PLACEHOLDER.noCities, icon: "info" }];
   }
   return data.cities.map((city) => cityNode(city, spec, now));
 }

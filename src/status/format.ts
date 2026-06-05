@@ -3,6 +3,7 @@
 // Kept free of `vscode` so the label/description/icon logic is unit-testable
 // (PRD: behaviour lives behind the testable seam; the tree-view glue stays
 // thin). `views.ts` maps these strings onto VS Code TreeItems + ThemeIcons.
+import { cityStatusKind as cityRunKind, cityStatusText } from '../cities/index.ts';
 import type {
   AgentResponse,
   CityInfo,
@@ -58,13 +59,19 @@ export function cityLabel(city: CityInfo): string {
 }
 
 export function cityDescription(city: CityInfo): string {
-  if (!city.running) return city.status ? `stopped · ${city.status}` : 'stopped';
-  return city.status || 'running';
+  return cityStatusText(city);
 }
 
 export function cityStatusKind(city: CityInfo): StatusKind {
-  if (city.error) return 'error';
-  return city.running ? 'ok' : 'off';
+  switch (cityRunKind(city)) {
+    case 'error':
+      return 'error';
+    case 'running':
+      return 'ok';
+    case 'stopped':
+    default:
+      return 'off';
+  }
 }
 
 // ---- agent ----------------------------------------------------------------
@@ -155,8 +162,9 @@ export function accessibleSupervisorLabel(health: SupervisorHealth | null): stri
 }
 
 export function accessibleCityLabel(city: CityInfo): string {
-  const base = accessibleName(`City ${city.name}`, cityDescription(city));
-  return city.error ? `${base}, error` : base;
+  // Use the detailed status phrase so a screen reader hears the actual error
+  // (e.g. "City X, error: unreachable"), not just that one exists.
+  return accessibleName(`City ${city.name}`, cityStatusText(city, { detail: true }));
 }
 
 export function accessibleAgentLabel(agent: AgentResponse): string {

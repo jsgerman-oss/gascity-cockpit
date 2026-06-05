@@ -32,7 +32,34 @@ describe('FleetStatusStore', () => {
       partialErrors: [],
       eventStream: null,
       lastError: null,
+      loading: false,
     });
+  });
+
+  it('tracks the loading flag and clears it on a terminal transition', () => {
+    const store = new FleetStatusStore();
+    const listener = vi.fn();
+    store.onDidChange(listener);
+
+    store.setLoading(true);
+    expect(store.state.loading).toBe(true);
+    // Idempotent: setting the same value does not re-fire.
+    store.setLoading(true);
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    // A landed snapshot means we are no longer loading.
+    store.applySnapshot(snapshot());
+    expect(store.state.loading).toBe(false);
+
+    // An error is also a terminal answer.
+    store.setLoading(true);
+    store.setError('boom');
+    expect(store.state.loading).toBe(false);
+
+    // …as is clearing the snapshot on disconnect.
+    store.setLoading(true);
+    store.clearSnapshot('gone');
+    expect(store.state.loading).toBe(false);
   });
 
   it('applies a snapshot and fires a change', () => {

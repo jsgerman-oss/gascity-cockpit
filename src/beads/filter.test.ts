@@ -131,7 +131,7 @@ describe("buildBeadTree", () => {
   it("collapses an empty dataset to a single message row", () => {
     const tree = buildBeadTree({ cities: [] }, spec, NOW);
     expect(tree).toHaveLength(1);
-    expect(tree[0]).toMatchObject({ kind: "message", label: "No cities found" });
+    expect(tree[0]).toMatchObject({ kind: "message", label: "No cities registered" });
   });
 
   it("nests bead leaves under their group", () => {

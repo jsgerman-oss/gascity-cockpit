@@ -6,6 +6,7 @@
 // top — and build each row's label. Kept vscode-free and unit-tested; the
 // QuickPick wiring lives in `open-chat.ts`, which falls back to a text box when
 // the list can't be fetched.
+import { cityStatusText } from "../cities/index.ts";
 import type { CityInfo } from "../api/index.ts";
 
 /**
@@ -35,16 +36,10 @@ export interface CityPickLabel {
 
 /** Build the picker label for one city. Pure. */
 export function cityPickLabel(city: CityInfo): CityPickLabel {
-  const description = city.error
-    ? `error: ${city.error}`
-    : city.running
-      ? city.status || "running"
-      : city.status
-        ? `stopped · ${city.status}`
-        : "stopped";
   return {
     label: city.name,
-    description,
+    // The QuickPick row has room, so surface the error message inline.
+    description: cityStatusText(city, { detail: true }),
     detail: city.path ?? "",
     name: city.name,
   };

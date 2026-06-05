@@ -8,6 +8,7 @@ import * as vscode from "vscode";
 import * as path from "node:path";
 import { bearerAuthHeader, createCockpitClient, listCities, listSessions, type CockpitClient } from "../api/index.ts";
 import { DEFAULT_SUPERVISOR_BASE_URL, type ApiEndpoint, type Logger } from "../discovery/index.ts";
+import { CITY_PLACEHOLDER } from "../cities/index.ts";
 import { ChatPanel } from "./chat-panel.ts";
 import { cityPickLabel, rankCitiesForPicker } from "./city-picker.ts";
 import { ConversationStore } from "./conversation-store.ts";
@@ -60,7 +61,7 @@ async function pickCity(client: CockpitClient, log: Logger): Promise<string | un
 
   const cities = result.data.items ?? [];
   if (cities.length === 0) {
-    return promptCity("No cities registered — enter a city name");
+    return promptCity(`${CITY_PLACEHOLDER.noCities} — enter a city name`);
   }
 
   const ranked = rankCitiesForPicker(cities, workspaceCityName());

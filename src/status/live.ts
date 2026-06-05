@@ -79,6 +79,9 @@ export class LiveStatus {
     this.generation += 1;
     const generation = this.generation;
 
+    // Show "connecting…" until the first snapshot (or error) lands, rather than
+    // a premature "no cities" (cockpit-1ll.16). Cleared by applySnapshot/setError.
+    this.store.setLoading(true);
     this.client = this.createClient(endpoint);
     const stream = this.createStream(endpoint);
     this.stream = stream;
@@ -92,6 +95,9 @@ export class LiveStatus {
   /** Tear down the connection, keeping the store's event history. */
   disconnect(): void {
     this.generation += 1;
+    // A connection that never produced a snapshot must not leave the tree stuck
+    // on "connecting…" once it goes away.
+    this.store.setLoading(false);
     this.clearRefreshTimer();
     if (this.snapshotAbort) {
       this.snapshotAbort.abort();

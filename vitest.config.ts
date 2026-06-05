@@ -10,6 +10,7 @@ export default defineConfig({
       provider: "v8",
       include: [
         "src/api/**/*.ts",
+        "src/cities/**/*.ts",
         "src/status/**/*.ts",
         "src/beads/**/*.ts",
         "src/code/**/*.ts",

@@ -25,6 +25,7 @@ function emptyState(): FleetStatusState {
     partialErrors: [],
     eventStream: null,
     lastError: null,
+    loading: false,
   };
 }
 
@@ -58,6 +59,7 @@ export class FleetStatusStore {
       sessionsByCity: snapshot.sessionsByCity,
       partialErrors: snapshot.partialErrors,
       lastError: null,
+      loading: false,
     };
     this.fire();
   }
@@ -78,7 +80,18 @@ export class FleetStatusStore {
 
   /** Record a fatal-ish error (snapshot failed, API unavailable, …). */
   setError(message: string): void {
-    this._state = { ...this._state, lastError: message };
+    this._state = { ...this._state, lastError: message, loading: false };
+    this.fire();
+  }
+
+  /**
+   * Mark the fleet as loading (or not). Set true when a connection begins so the
+   * Fleet tree shows "connecting…" until the first snapshot/error lands; the
+   * snapshot/error/clear transitions reset it.
+   */
+  setLoading(loading: boolean): void {
+    if (this._state.loading === loading) return;
+    this._state = { ...this._state, loading };
     this.fire();
   }
 
@@ -95,6 +108,7 @@ export class FleetStatusStore {
       sessionsByCity: {},
       partialErrors: [],
       lastError: reason,
+      loading: false,
     };
     this.fire();
   }
