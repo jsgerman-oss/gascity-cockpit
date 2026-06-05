@@ -66,6 +66,23 @@ export function createCockpitClient(options: CockpitClientOptions): CockpitClien
 /** A request id the supervisor stamps on every response, for log correlation. */
 export const REQUEST_ID_HEADER = "X-GC-Request-Id";
 
+/**
+ * Anti-CSRF header the supervisor requires on every mutating request
+ * (POST/PATCH/DELETE). The server only checks the header is present and
+ * non-empty — the value itself is not validated.
+ */
+export const CSRF_HEADER = "X-GC-Request";
+
+/**
+ * Header bag carrying the anti-CSRF header, to spread into a mutation's typed
+ * `params.header`. openapi-fetch types every mutation as requiring this header,
+ * so call sites cannot forget it; this keeps the value in one place for all
+ * feature modules that issue writes (approvals, beads CRUD, chat submit, …).
+ */
+export function csrfHeader(value = "cockpit"): { "X-GC-Request": string } {
+  return { "X-GC-Request": value };
+}
+
 /** Normalised, display-ready error derived from an openapi-fetch failure. */
 export interface NormalizedError {
   /** HTTP status code, or 0 when the request never completed (network/abort). */

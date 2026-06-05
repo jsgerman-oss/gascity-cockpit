@@ -4,5 +4,7 @@
 // from `./api` and not reach into individual modules or the generated types.
 export * from "./types";
 export * from "./client";
+export * from "./result";
 export * from "./version";
 export * from "./sse";
+export * from "./approvals";

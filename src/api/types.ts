@@ -25,3 +25,25 @@ export type SupervisorHealth = Schema<"SupervisorHealthOutputBody">;
 
 /** RFC 7807 problem document returned on error responses. */
 export type ApiErrorModel = Schema<"ErrorModel">;
+
+// --- Tool-approval cockpit (pending / respond / permission-mode) ---
+
+/**
+ * A pending tool-approval or prompt-for-input awaiting a human decision, as
+ * returned for a single session (`GET .../session/{id}/pending`). Carries the
+ * `prompt`, available `options`, and provider `metadata` needed to render it.
+ */
+export type PendingInteraction = Schema<"PendingInteraction">;
+
+/**
+ * One pending interaction in the city-wide aggregation
+ * (`GET /v0/city/{cityName}/pending`). Identifiers only — `kind`, `request_id`,
+ * and the `session_id` that is blocked; fetch the session's pending for detail.
+ */
+export type CityPendingEntry = Schema<"CityPendingEntry">;
+
+/** Result of responding to a pending interaction (`POST .../respond`). */
+export type SessionRespondResult = Schema<"SessionRespondOutputBody">;
+
+/** Session as returned after setting its permission mode (`POST .../permission-mode`). */
+export type SessionDetail = Schema<"SessionResponse">;
