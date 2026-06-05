@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { reveal } from '$lib/reveal';
 	const points = [
 		{
 			k: 'Pure /v0 client',
@@ -26,7 +27,7 @@
 			</p>
 		</header>
 
-		<div class="diagram" role="img" aria-label="Data flow: the VS Code Cockpit talks to the supervisor's /v0 HTTP and SSE API, which fronts the gas city's agents — Mayor, polecats, refinery, and witness.">
+		<div class="diagram" use:reveal role="img" aria-label="Data flow: the VS Code Cockpit talks to the supervisor's /v0 HTTP and SSE API, which fronts the gas city's agents — Mayor, polecats, refinery, and witness.">
 			<div class="node">
 				<span class="node-tag">editor</span>
 				<span class="node-name">VS Code Cockpit</span>
@@ -35,7 +36,7 @@
 			<div class="wire">
 				<span class="wire-label">/v0 · HTTP + SSE</span>
 				<svg class="wire-svg" viewBox="0 0 120 24" preserveAspectRatio="none" aria-hidden="true">
-					<line x1="0" y1="12" x2="112" y2="12" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 4" />
+					<line class="flow" x1="0" y1="12" x2="112" y2="12" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5 4" />
 					<path d="M104 6 L114 12 L104 18" fill="none" stroke="var(--accent)" stroke-width="1.5" />
 				</svg>
 			</div>
@@ -209,6 +210,35 @@
 		color: var(--mute);
 		max-width: 40ch;
 	}
+	/* The /v0 wire carries live data: a slow flowing dash. */
+	@keyframes vflow {
+		to {
+			stroke-dashoffset: -18;
+		}
+	}
+	.wire-svg line.flow {
+		animation: vflow 0.9s linear infinite;
+	}
+	/* Active agents breathe. */
+	@keyframes adpulse {
+		0%,
+		100% {
+			box-shadow: 0 0 5px color-mix(in oklab, var(--signal-green) 35%, transparent);
+		}
+		50% {
+			box-shadow: 0 0 9px color-mix(in oklab, var(--signal-green) 75%, transparent);
+		}
+	}
+	.ad.active {
+		animation: adpulse 2.8s ease-in-out infinite;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.wire-svg line.flow,
+		.ad.active {
+			animation: none;
+		}
+	}
+
 	@media (max-width: 860px) {
 		.diagram {
 			grid-template-columns: 1fr;

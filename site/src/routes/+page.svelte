@@ -80,6 +80,23 @@
 		height: 50rem;
 		background: radial-gradient(circle, var(--glow) 0%, transparent 60%);
 		pointer-events: none;
+		animation: breathe 9s ease-in-out infinite;
+	}
+	@keyframes breathe {
+		0%,
+		100% {
+			opacity: 0.72;
+			transform: scale(1);
+		}
+		50% {
+			opacity: 1;
+			transform: scale(1.06);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.field::after {
+			animation: none;
+		}
 	}
 	.hero-grid {
 		position: relative;
