@@ -1,0 +1,11 @@
+# Sources & dev config — only the bundled out/extension.cjs ships.
+src/**
+docs/**
+.beads/**
+.gc/**
+tsconfig.json
+**/*.test.ts
+**/*.map
+.gitignore
+.vscode-test/**
+node_modules/**

@@ -1,0 +1,81 @@
+{
+  "name": "gascity-cockpit",
+  "displayName": "GasCity Cockpit",
+  "description": "An adaptive, in-editor cockpit for monitoring and driving your gas cities, built on the gascity /v0 HTTP API.",
+  "version": "0.0.1",
+  "publisher": "gastown",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0",
+    "node": ">=20"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.cjs",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "gascityCockpit.reconnect",
+        "title": "GasCity Cockpit: Reconnect to Supervisor API",
+        "category": "GasCity Cockpit"
+      },
+      {
+        "command": "gascityCockpit.showStatus",
+        "title": "GasCity Cockpit: Show Connection Status",
+        "category": "GasCity Cockpit"
+      }
+    ],
+    "configuration": {
+      "title": "GasCity Cockpit",
+      "properties": {
+        "gascityCockpit.api.url": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Explicit base URL of the gascity supervisor API (e.g. `http://127.0.0.1:8372`). Highest-priority discovery source — overrides the discovery descriptor and the default. Leave empty to auto-discover."
+        },
+        "gascityCockpit.api.token": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Optional bearer token sent as `Authorization: Bearer <token>` to the supervisor API. Leave empty for the default localhost (unauthenticated) setup."
+        },
+        "gascityCockpit.api.healthPollSeconds": {
+          "type": "number",
+          "default": 10,
+          "minimum": 2,
+          "markdownDescription": "How often (seconds) to poll `/health` while connected, to detect the API going away (e.g. `gc stop` or a supervisor restart)."
+        },
+        "gascityCockpit.api.reconnect.baseDelayMs": {
+          "type": "number",
+          "default": 500,
+          "minimum": 50,
+          "markdownDescription": "Base delay (ms) for exponential reconnect backoff after the API becomes unreachable."
+        },
+        "gascityCockpit.api.reconnect.maxDelayMs": {
+          "type": "number",
+          "default": 15000,
+          "minimum": 500,
+          "markdownDescription": "Ceiling (ms) for exponential reconnect backoff."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ./",
+    "test": "node --test",
+    "build": "esbuild src/extension.ts --bundle --outfile=out/extension.cjs --platform=node --format=cjs --external:vscode --sourcemap",
+    "watch": "esbuild src/extension.ts --bundle --outfile=out/extension.cjs --platform=node --format=cjs --external:vscode --sourcemap --watch",
+    "vscode:prepublish": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/vscode": "^1.90.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.2"
+  }
+}
