@@ -24,3 +24,18 @@ export {
   type DiffSummary,
   type WorktreeRef,
 } from "./worktree.ts";
+
+export {
+  buildActivity,
+  buildIndex,
+  dedupeTouchedFiles,
+  normalizeRepoPath,
+  touchDecoration,
+  touchDetail,
+  touchSummary,
+  WorktreeActivityIndex,
+  type BuildIndexOptions,
+  type FileTouch,
+  type TouchedFile,
+  type WorktreeActivity,
+} from "./lens.ts";

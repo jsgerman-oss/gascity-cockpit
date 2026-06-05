@@ -262,6 +262,7 @@ deferred until it is stable.
 - [Extmsg participant](docs/extmsg-participant.md)
 - [Merge queue review](docs/merge-queue-review.md)
 - [Native notifications](docs/notifications.md)
+- [Worktree code lens](docs/worktree-code-lens.md)
 
 ## Contributing
 

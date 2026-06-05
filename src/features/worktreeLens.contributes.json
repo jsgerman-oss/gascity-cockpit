@@ -1,0 +1,37 @@
+{
+  "commands": [
+    {
+      "command": "gascityCockpit.worktreeLens.show",
+      "title": "Show Worktrees Editing This File",
+      "category": "GasCity Cockpit",
+      "icon": "$(eye)"
+    },
+    {
+      "command": "gascityCockpit.worktreeLens.refresh",
+      "title": "Refresh Worktree Lens",
+      "category": "GasCity Cockpit",
+      "icon": "$(refresh)"
+    }
+  ],
+  "menus": {
+    "commandPalette": [
+      { "command": "gascityCockpit.worktreeLens.show", "when": "false" }
+    ]
+  },
+  "configuration": {
+    "title": "GasCity Cockpit",
+    "properties": {
+      "gascityCockpit.worktreeLens.enabled": {
+        "type": "boolean",
+        "default": true,
+        "markdownDescription": "Annotate files with the in-flight beads/polecats whose worktrees are editing them right now (a CodeLens at the top of the file plus an Explorer badge). Turn off to silence the lens."
+      },
+      "gascityCockpit.worktreeLens.refreshIntervalSeconds": {
+        "type": "number",
+        "default": 30,
+        "minimum": 5,
+        "markdownDescription": "How often (seconds) to re-scan the fleet's worktrees for the code lens. Each scan runs read-only `git diff` in every in-progress bead's worktree; lower values are fresher but busier."
+      }
+    }
+  }
+}

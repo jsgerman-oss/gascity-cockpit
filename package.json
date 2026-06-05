@@ -247,6 +247,18 @@
         "title": "GasCity Cockpit: Show Town Topology",
         "category": "GasCity Cockpit",
         "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "gascityCockpit.worktreeLens.show",
+        "title": "Show Worktrees Editing This File",
+        "category": "GasCity Cockpit",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "gascityCockpit.worktreeLens.refresh",
+        "title": "Refresh Worktree Lens",
+        "category": "GasCity Cockpit",
+        "icon": "$(refresh)"
       }
     ],
     "menus": {
@@ -433,6 +445,10 @@
         {
           "command": "gascityCockpit.mergeQueue.copyBranch",
           "when": "false"
+        },
+        {
+          "command": "gascityCockpit.worktreeLens.show",
+          "when": "false"
         }
       ],
       "editor/context": [
@@ -504,6 +520,17 @@
           "default": 15,
           "minimum": 5,
           "markdownDescription": "How often (seconds) to poll `/v0/city/{city}/pending` for new approvals as a backstop, in addition to polling immediately after each session change."
+        },
+        "gascityCockpit.worktreeLens.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Annotate files with the in-flight beads/polecats whose worktrees are editing them right now (a CodeLens at the top of the file plus an Explorer badge). Turn off to silence the lens."
+        },
+        "gascityCockpit.worktreeLens.refreshIntervalSeconds": {
+          "type": "number",
+          "default": 30,
+          "minimum": 5,
+          "markdownDescription": "How often (seconds) to re-scan the fleet's worktrees for the code lens. Each scan runs read-only `git diff` in every in-progress bead's worktree; lower values are fresher but busier."
         }
       }
     }

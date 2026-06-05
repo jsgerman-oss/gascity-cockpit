@@ -27,6 +27,7 @@ import mergeQueueFeature from './mergeQueue.feature.ts';
 import townTopologyFeature from './townTopology.feature.ts';
 import timeTravelFeature from './timeTravel.feature.ts';
 import notificationsFeature from './notifications.feature.ts';
+import worktreeLensFeature from './worktreeLens.feature.ts';
 
 /** Every cockpit feature, in activation order. Append new features here. */
 export const FEATURES: readonly CockpitFeature[] = [
@@ -43,6 +44,7 @@ export const FEATURES: readonly CockpitFeature[] = [
   townTopologyFeature,
   timeTravelFeature,
   notificationsFeature,
+  worktreeLensFeature,
 ];
 
 /** Activate every registered feature against the shared host. */
