@@ -229,6 +229,12 @@
         "title": "Query Fleet…",
         "category": "GasCity Cockpit",
         "icon": "$(search)"
+      },
+      {
+        "command": "gascityCockpit.townTopology.show",
+        "title": "GasCity Cockpit: Show Town Topology",
+        "category": "GasCity Cockpit",
+        "icon": "$(type-hierarchy)"
       }
     ],
     "menus": {
@@ -282,6 +288,11 @@
           "command": "gascityCockpit.mergeQueue.refresh",
           "when": "view == gascityCockpit.mergeQueue",
           "group": "navigation@2"
+        },
+        {
+          "command": "gascityCockpit.townTopology.show",
+          "when": "view == gascityCockpit.fleet",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [

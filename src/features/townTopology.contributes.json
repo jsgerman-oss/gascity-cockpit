@@ -1,0 +1,19 @@
+{
+  "commands": [
+    {
+      "command": "gascityCockpit.townTopology.show",
+      "title": "GasCity Cockpit: Show Town Topology",
+      "category": "GasCity Cockpit",
+      "icon": "$(type-hierarchy)"
+    }
+  ],
+  "menus": {
+    "view/title": [
+      {
+        "command": "gascityCockpit.townTopology.show",
+        "when": "view == gascityCockpit.fleet",
+        "group": "navigation@3"
+      }
+    ]
+  }
+}
