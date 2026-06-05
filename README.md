@@ -9,6 +9,7 @@
   <img src="https://img.shields.io/badge/VS%20Code-extension-007ACC?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="VS Code extension">
   <a href="https://github.com/gastownhall/gascity"><img src="https://img.shields.io/badge/Built%20on-Gas%20City%20%2Fv0-c9a84c?style=for-the-badge" alt="Built on Gas City /v0"></a>
   <img src="https://img.shields.io/badge/version-0.0.1-3b82f6?style=for-the-badge" alt="Version 0.0.1">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License"></a>
 </p>
 
 GasCity Cockpit turns VS Code into a live cockpit for the gas cities you operate. Instead
