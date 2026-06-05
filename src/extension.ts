@@ -28,6 +28,7 @@ import {
   checkApiCompatibility,
   createCockpitClient,
   PINNED_API_VERSION,
+  type CockpitClient,
 } from './api/index.ts';
 import {
   FleetStatusStore,
@@ -37,8 +38,21 @@ import {
 } from './status/index.ts';
 import { registerStatusViews } from './status/views.ts';
 import { openChat } from './chat/index.ts';
+import { BeadsRepository } from './beads/index.ts';
+import { registerBeadsExplorer } from './views/beadsExplorer.ts';
 
 const CONFIG_SECTION = 'gascityCockpit';
+
+/** Build a typed client for the current endpoint, or null when unusable. */
+function clientFromStatus(status: ConnectionStatus): CockpitClient | null {
+  const endpoint = status.endpoint;
+  if (!endpoint || status.state === 'unavailable' || status.state === 'idle') return null;
+  return createCockpitClient({
+    baseUrl: endpoint.baseUrl,
+    timeoutMs: 5000,
+    ...(endpoint.token ? { headers: { Authorization: `Bearer ${endpoint.token}` } } : {}),
+  });
+}
 
 export function activate(context: vscode.ExtensionContext): void {
   const output = vscode.window.createOutputChannel('GasCity Cockpit', { log: true });
@@ -75,6 +89,12 @@ export function activate(context: vscode.ExtensionContext): void {
   });
   registerStatusViews(context, store, live);
 
+  // The Beads explorer (and future feature panes) talk to whatever supervisor is
+  // currently connected via this mutable client, kept in sync with the manager.
+  let currentClient: CockpitClient | null = null;
+  const repository = new BeadsRepository({ getClient: () => currentClient });
+  const explorer = registerBeadsExplorer(context, { repository });
+
   // Connect the live status only to a fully-connected supervisor; reconnect on a
   // detected restart or an endpoint/token change, and tear down when the API is
   // gone. `liveKey` dedupes the connected endpoint so routine health polls don't
@@ -103,14 +123,23 @@ export function activate(context: vscode.ExtensionContext): void {
 
   let manager = createManager(log);
   let lastStatus: ConnectionStatus = manager.status;
+  let prevState: ConnectionStatus['state'] | null = null;
   const subscribe = (m: ConnectionManager) =>
     m.onDidChangeStatus((status) => {
       lastStatus = status;
+      currentClient = clientFromStatus(status);
       renderStatusBar(statusBar, status);
       if (status.restarted) {
         log('info', 'supervisor restarted — downstream consumers should resubscribe');
       }
+      // Live status panes follow the supervisor's reachability.
       applyLiveStatus(status);
+      // Reload the explorer on meaningful transitions: first connect, a
+      // supervisor restart, or the API dropping out.
+      const connected = status.state === 'connected' && prevState !== 'connected';
+      const dropped = status.state === 'unavailable' && prevState !== 'unavailable';
+      if (connected || dropped || status.restarted) explorer.refresh();
+      prevState = status.state;
     });
   let statusSub = subscribe(manager);
   renderStatusBar(statusBar, manager.status);
@@ -171,6 +200,7 @@ export function activate(context: vscode.ExtensionContext): void {
       log('info', 'configuration changed — rebuilding connection');
       statusSub.dispose();
       manager.dispose();
+      prevState = null; // force the rebuilt manager's first connect to refresh
       manager = createManager(log);
       statusSub = subscribe(manager);
       manager.start();

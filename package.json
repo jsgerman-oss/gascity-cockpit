@@ -29,6 +29,33 @@
     "onStartupFinished"
   ],
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gascityCockpit",
+          "title": "GasCity Cockpit",
+          "icon": "media/cockpit.svg"
+        }
+      ]
+    },
+    "views": {
+      "gascityCockpit": [
+        {
+          "id": "gascityCockpit.fleet",
+          "name": "Fleet"
+        },
+        {
+          "id": "gascityCockpit.events",
+          "name": "Event Feed"
+        },
+        {
+          "id": "gascityCockpit.beads",
+          "name": "Beads",
+          "icon": "media/cockpit.svg",
+          "contextualTitle": "GasCity Beads"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "gascityCockpit.reconnect",
@@ -56,29 +83,56 @@
         "command": "gascityCockpit.openChat",
         "title": "GasCity Cockpit: Open Chat (Mayor / agent)",
         "category": "GasCity Cockpit"
+      },
+      {
+        "command": "gascityCockpit.beads.refresh",
+        "title": "Refresh Beads",
+        "category": "GasCity Beads",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "gascityCockpit.beads.setGroupBy",
+        "title": "Group Beads By…",
+        "category": "GasCity Beads",
+        "icon": "$(group-by-ref-type)"
+      },
+      {
+        "command": "gascityCockpit.beads.toggleClosed",
+        "title": "Toggle Closed Beads",
+        "category": "GasCity Beads",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "gascityCockpit.beads.filter",
+        "title": "Filter Beads…",
+        "category": "GasCity Beads",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "gascityCockpit.beads.clearFilters",
+        "title": "Clear Bead Filters",
+        "category": "GasCity Beads",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "gascityCockpit.beads.openDetail",
+        "title": "Open Bead Detail",
+        "category": "GasCity Beads",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "gascityCockpit.beads.showGraph",
+        "title": "Show Dependency Graph",
+        "category": "GasCity Beads",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "gascityCockpit.beads.copyId",
+        "title": "Copy Bead ID",
+        "category": "GasCity Beads",
+        "icon": "$(copy)"
       }
     ],
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "gascityCockpit",
-          "title": "GasCity Cockpit",
-          "icon": "$(broadcast)"
-        }
-      ]
-    },
-    "views": {
-      "gascityCockpit": [
-        {
-          "id": "gascityCockpit.fleet",
-          "name": "Fleet"
-        },
-        {
-          "id": "gascityCockpit.events",
-          "name": "Event Feed"
-        }
-      ]
-    },
     "menus": {
       "view/title": [
         {
@@ -95,7 +149,23 @@
           "command": "gascityCockpit.refreshStatus",
           "when": "view == gascityCockpit.events",
           "group": "navigation@1"
-        }
+        },
+        { "command": "gascityCockpit.beads.filter", "when": "view == gascityCockpit.beads", "group": "navigation@1" },
+        { "command": "gascityCockpit.beads.setGroupBy", "when": "view == gascityCockpit.beads", "group": "navigation@2" },
+        { "command": "gascityCockpit.beads.toggleClosed", "when": "view == gascityCockpit.beads", "group": "navigation@3" },
+        { "command": "gascityCockpit.beads.refresh", "when": "view == gascityCockpit.beads", "group": "navigation@4" },
+        { "command": "gascityCockpit.beads.clearFilters", "when": "view == gascityCockpit.beads", "group": "1_filters" }
+      ],
+      "view/item/context": [
+        { "command": "gascityCockpit.beads.showGraph", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "inline" },
+        { "command": "gascityCockpit.beads.openDetail", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "1_bead@1" },
+        { "command": "gascityCockpit.beads.showGraph", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "1_bead@2" },
+        { "command": "gascityCockpit.beads.copyId", "when": "view == gascityCockpit.beads && viewItem == gascityBead", "group": "1_bead@3" }
+      ],
+      "commandPalette": [
+        { "command": "gascityCockpit.beads.openDetail", "when": "false" },
+        { "command": "gascityCockpit.beads.showGraph", "when": "false" },
+        { "command": "gascityCockpit.beads.copyId", "when": "false" }
       ]
     },
     "configuration": {

@@ -8,13 +8,14 @@ The full product spec is in [`docs/PRD.md`](docs/PRD.md). Planning lives in epic
 **bh-bsmt** (blackrim-hq beads); this rig's build is tracked under epic
 **cockpit-1ll**. This rig owns the extension + pack source.
 
-> **Status: Phase 1 foundation.** This repo currently contains the extension
-> scaffold, the **API discovery + resilience** core (how the extension finds the
-> supervisor API and stays usable as it comes and goes — `gc stop`, supervisor
-> restart), and the typed `/v0` client (epic tasks `cockpit-1ll.1` and
-> `cockpit-1ll.2`). The feature surfaces — beads explorer, live status panes,
-> chat, approvals, dashboard projection — are tracked as follow-on beads and
-> build on the seams documented below.
+> **Status: Phase 1.** This repo contains the extension scaffold, the **API
+> discovery + resilience** core (how the extension finds the supervisor API and
+> stays usable as it comes and goes — `gc stop`, supervisor restart), the typed
+> `/v0` client (epic tasks `cockpit-1ll.1` and `cockpit-1ll.2`), and the
+> **Beads explorer** — a multi-city tree with rich status, filter/group, bead
+> detail, and dependency graphs (`cockpit-1ll.5`). The remaining feature
+> surfaces — live status panes, chat, approvals, dashboard projection — are
+> tracked as follow-on beads and build on the seams documented below.
 
 ## Architecture
 
@@ -41,7 +42,18 @@ src/
     version.ts          version pinning + runtime compatibility check
     sse.ts              WHATWG-compliant Server-Sent Events reader
     index.ts            public barrel — import features from here
+  beads/                the Beads explorer domain layer — NO `vscode` imports
+    types.ts            domain model (records, filters, tree nodes) over /v0 beads
+    status.ts           rich status / priority / rig derivation
+    filter.ts           filter, group, and tree assembly
+    detail.ts           bead detail → Markdown
+    graph.ts            dependency graph → layered, themeable SVG / Mermaid
+    repository.ts       multi-city fan-out over the bead endpoints
+    index.ts            public barrel for the beads core
+  views/                VS Code surfaces (thin glue, kept untested)
+    beadsExplorer.ts    tree provider + detail document + graph webview + commands
   test/                 shared test helpers (mock fetch, stream builders)
+media/                  activity-bar icon
 docs/                   PRD + contracts
 ```
 
@@ -64,6 +76,12 @@ docs/                   PRD + contracts
 - **SSE.** `openapi-fetch` covers request/response; `sse.ts` adds a chunk-safe,
   reconnect-friendly reader for the `text/event-stream` endpoints that the live
   status and chat features build on.
+- **Beads explorer.** A multi-city tree of beads with rich status
+  (ready / blocked / deferred derived on top of the raw status), filter and group
+  by status / rig / assignee / type / priority, a read-only Markdown bead detail,
+  and a dependency-graph webview. The domain layer (`beads/`) has no `vscode`
+  import and is unit-tested against a mock `/v0`; the editor surfaces (`views/`)
+  are the thin glue. See [docs/beads-explorer.md](docs/beads-explorer.md).
 
 ## Prerequisites
 
