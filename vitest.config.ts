@@ -8,7 +8,13 @@ export default defineConfig({
     environment: "node",
     coverage: {
       provider: "v8",
-      include: ["src/api/**/*.ts", "src/status/**/*.ts", "src/beads/**/*.ts"],
+      include: [
+        "src/api/**/*.ts",
+        "src/status/**/*.ts",
+        "src/beads/**/*.ts",
+        "src/code/**/*.ts",
+        "src/formulas/**/*.ts",
+      ],
       // Generated types and tests are excluded; the thin vscode-bound status
       // glue (views.ts) is intentionally not unit-tested (PRD); bead fixtures
       // are data-only and carry no logic worth covering.

@@ -40,6 +40,8 @@ import { registerStatusViews } from './status/views.ts';
 import { openChat } from './chat/index.ts';
 import { BeadsRepository } from './beads/index.ts';
 import { registerBeadsExplorer } from './views/beadsExplorer.ts';
+import { registerCodeNav } from './views/codeNav.ts';
+import { registerFormulaFlows } from './views/formulaFlows.ts';
 import { DashboardPanel, type DashboardPanelDeps } from './dashboard/panel.ts';
 
 const CONFIG_SECTION = 'gascityCockpit';
@@ -95,6 +97,12 @@ export function activate(context: vscode.ExtensionContext): void {
   let currentClient: CockpitClient | null = null;
   const repository = new BeadsRepository({ getClient: () => currentClient });
   const explorer = registerBeadsExplorer(context, { repository });
+
+  // Bead → worktree → diff navigation (read-only) and the TDD/formula flows
+  // (cockpit-1ll.11). Code nav reads worktree paths from bead metadata and runs
+  // read-only git; formula flows talk to the currently-connected supervisor.
+  registerCodeNav(context, { repository });
+  registerFormulaFlows(context, { getClient: () => currentClient, repository, log });
 
   // Connect the live status only to a fully-connected supervisor; reconnect on a
   // detected restart or an endpoint/token change, and tear down when the API is
