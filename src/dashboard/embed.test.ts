@@ -81,6 +81,10 @@ describe("buildWebviewHtml", () => {
     expect(html).not.toMatch(/authorization/i);
   });
 
+  it("declares light+dark color-scheme so the shell's native UI follows the theme", () => {
+    expect(html).toContain("color-scheme: light dark");
+  });
+
   it("escapes a hostile URL so it cannot break out of the src attribute", () => {
     const hostile = buildWebviewHtml({
       dashboardUrl: `${ORIGIN}/a"><script>alert(1)</script>`,
@@ -116,5 +120,9 @@ describe("buildPlaceholderHtml", () => {
   it("gives the button a theme-driven focus ring and a high-contrast-safe border", () => {
     expect(html).toContain("button:focus-visible { outline: 2px solid var(--vscode-focusBorder)");
     expect(html).toContain("var(--vscode-contrastBorder, transparent)");
+  });
+
+  it("declares light+dark color-scheme so native UI follows the theme", () => {
+    expect(html).toContain("color-scheme: light dark");
   });
 });

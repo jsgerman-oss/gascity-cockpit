@@ -200,6 +200,9 @@ export function buildWebviewHtml(opts: WebviewHtmlOptions): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${title}</title>
   <style>
+    /* Declare both schemes so the shell's own native UI (scrollbars, canvas
+       background behind the frame) follows the editor's light/dark/HC theme. */
+    :root { color-scheme: light dark; }
     html, body { height: 100%; margin: 0; padding: 0; background: var(--vscode-editor-background); }
     #gc-dashboard { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
   </style>
@@ -254,6 +257,9 @@ export function buildPlaceholderHtml(opts: PlaceholderHtmlOptions): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GasCity Dashboard</title>
   <style>
+    /* Both schemes declared so native UI (scrollbars, the button's focus ring
+       affordances) renders in the editor's light/dark/HC variant. */
+    :root { color-scheme: light dark; }
     body {
       font-family: var(--vscode-font-family);
       color: var(--vscode-foreground);

@@ -260,6 +260,10 @@ export function renderGraphWebviewHtml(opts: GraphWebviewHtmlOptions): string {
     '<html lang="en"><head><meta charset="utf-8">',
     `<meta http-equiv="Content-Security-Policy" content="${csp}">`,
     "<style>",
+    // Declare both schemes so the UA paints native UI — the scrollbars on the
+    // .gc-wrap overflow, the canvas background — in the active light/dark/HC
+    // variant rather than always-light.
+    ":root { color-scheme: light dark; }",
     "body { padding: 12px; color: var(--vscode-foreground); font-family: var(--vscode-font-family); }",
     ".gc-hint { color: var(--vscode-descriptionForeground); margin-bottom: 10px; font-size: 12px; }",
     ".gc-wrap { overflow: auto; }",

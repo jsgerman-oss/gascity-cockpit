@@ -169,6 +169,10 @@ describe("renderGraphWebviewHtml", () => {
     expect(html).toContain("{ type: 'open', id: g.getAttribute('data-id') }");
   });
 
+  it("declares light+dark color-scheme so native UI follows the theme", () => {
+    expect(html).toContain("color-scheme: light dark");
+  });
+
   it("exposes nodes as focusable, named buttons for keyboard + screen-reader use", () => {
     const graph = buildDependencyGraph(
       makeGraph({ root: makeBead({ id: "root", title: "Root bead", status: "open" }), beads: [makeBead({ id: "root", title: "Root bead" })] }),
