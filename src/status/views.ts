@@ -8,6 +8,11 @@
 import * as vscode from 'vscode';
 import type { Disposable } from '../discovery/index.ts';
 import {
+  accessibleAgentLabel,
+  accessibleCityLabel,
+  accessibleEventLabel,
+  accessibleSessionLabel,
+  accessibleSupervisorLabel,
   agentDescription,
   agentLabel,
   agentStatusKind,
@@ -124,6 +129,7 @@ export class FleetTreeProvider implements vscode.TreeDataProvider<FleetNode>, Di
         item.description = supervisorDescription(health);
         item.iconPath = statusIcon(supervisorStatusKind(health));
         item.contextValue = 'gascitySupervisor';
+        item.accessibilityInformation = { label: accessibleSupervisorLabel(health) };
         if (health) {
           const md = new vscode.MarkdownString();
           md.appendMarkdown(`**Supervisor** — ${health.status}\n\n`);
@@ -140,6 +146,7 @@ export class FleetTreeProvider implements vscode.TreeDataProvider<FleetNode>, Di
         item.description = cityDescription(node.city);
         item.iconPath = statusIcon(cityStatusKind(node.city));
         item.contextValue = 'gascityCity';
+        item.accessibilityInformation = { label: accessibleCityLabel(node.city) };
         const md = new vscode.MarkdownString();
         md.appendMarkdown(`**${node.city.name}**\n\n- Path: \`${node.city.path}\`\n`);
         if (node.city.error) md.appendMarkdown(`- Error: ${node.city.error}\n`);
@@ -156,6 +163,7 @@ export class FleetTreeProvider implements vscode.TreeDataProvider<FleetNode>, Di
         item.id = `group:${node.cityName}:${node.group}`;
         item.iconPath = new vscode.ThemeIcon(node.group === 'agents' ? 'organization' : 'comment-discussion');
         item.contextValue = `gascityGroup.${node.group}`;
+        item.accessibilityInformation = { label: `${title}, ${count}` };
         return item;
       }
       case 'agent': {
@@ -165,6 +173,7 @@ export class FleetTreeProvider implements vscode.TreeDataProvider<FleetNode>, Di
         item.iconPath = statusIcon(agentStatusKind(node.agent));
         item.contextValue = 'gascityAgent';
         item.tooltip = agentTooltip(node.cityName, node.agent);
+        item.accessibilityInformation = { label: accessibleAgentLabel(node.agent) };
         return item;
       }
       case 'session': {
@@ -174,6 +183,7 @@ export class FleetTreeProvider implements vscode.TreeDataProvider<FleetNode>, Di
         item.iconPath = statusIcon(sessionStatusKind(node.session));
         item.contextValue = 'gascitySession';
         item.tooltip = sessionTooltip(node.cityName, node.session);
+        item.accessibilityInformation = { label: accessibleSessionLabel(node.session) };
         return item;
       }
       case 'notice':
@@ -183,6 +193,7 @@ export class FleetTreeProvider implements vscode.TreeDataProvider<FleetNode>, Di
         if (node.description) item.description = node.description;
         item.iconPath = new vscode.ThemeIcon('info');
         item.contextValue = 'gascityNotice';
+        item.accessibilityInformation = { label: node.description ? `${node.label}, ${node.description}` : node.label };
         return item;
       }
     }
@@ -216,6 +227,7 @@ export class EventsTreeProvider implements vscode.TreeDataProvider<EventNode>, D
       const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.None);
       item.id = `notice:${node.id}`;
       item.iconPath = new vscode.ThemeIcon('info');
+      item.accessibilityInformation = { label: node.label };
       return item;
     }
     const event = node.event;
@@ -224,6 +236,7 @@ export class EventsTreeProvider implements vscode.TreeDataProvider<EventNode>, D
     item.description = eventDescription(event);
     item.iconPath = statusIcon(eventStatusKind(event.type));
     item.contextValue = 'gascityEvent';
+    item.accessibilityInformation = { label: accessibleEventLabel(event) };
     const md = new vscode.MarkdownString();
     md.appendMarkdown(`**${event.type}**\n\n`);
     if (event.ts) md.appendMarkdown(`- Time: ${event.ts}\n`);

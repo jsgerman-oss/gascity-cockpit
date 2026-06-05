@@ -268,9 +268,13 @@ export function buildPlaceholderHtml(opts: PlaceholderHtmlOptions): string {
     button {
       font-family: inherit; font-size: inherit; cursor: pointer;
       color: var(--vscode-button-foreground); background: var(--vscode-button-background);
-      border: 1px solid var(--vscode-button-background); border-radius: 2px; padding: 0.4rem 1rem;
+      /* Keep a visible edge in high-contrast themes (contrastBorder), not the
+         button background which would vanish against the fill. */
+      border: 1px solid var(--vscode-button-border, var(--vscode-contrastBorder, transparent));
+      border-radius: 2px; padding: 0.4rem 1rem;
     }
     button:hover { background: var(--vscode-button-hoverBackground); }
+    button:focus-visible { outline: 2px solid var(--vscode-focusBorder); outline-offset: 2px; }
   </style>
 </head>
 <body>

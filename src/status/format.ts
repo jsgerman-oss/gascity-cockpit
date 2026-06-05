@@ -137,6 +137,41 @@ export function eventStatusKind(type: string): StatusKind {
   return 'ok';
 }
 
+// ---- accessibility ---------------------------------------------------------
+//
+// VS Code announces a TreeItem's label + description, but the severity an item
+// conveys through its *icon* (ok / busy / warn / error / off) is invisible to
+// assistive tech. These compose a single accessible name — label, then the
+// description's words — so a screen reader hears everything in one phrase.
+// `views.ts` sets the result as `TreeItem.accessibilityInformation`.
+
+/** Join a label with its description into one accessible phrase, dropping empties. */
+function accessibleName(label: string, description?: string): string {
+  return [label, description].filter((part) => part && part.length).join(', ');
+}
+
+export function accessibleSupervisorLabel(health: SupervisorHealth | null): string {
+  return accessibleName(supervisorLabel(health), supervisorDescription(health));
+}
+
+export function accessibleCityLabel(city: CityInfo): string {
+  const base = accessibleName(`City ${city.name}`, cityDescription(city));
+  return city.error ? `${base}, error` : base;
+}
+
+export function accessibleAgentLabel(agent: AgentResponse): string {
+  const base = accessibleName(agentLabel(agent), agentDescription(agent));
+  return !agent.available && agent.unavailable_reason ? `${base}, unavailable: ${agent.unavailable_reason}` : base;
+}
+
+export function accessibleSessionLabel(session: SessionResponse): string {
+  return accessibleName(sessionLabel(session), sessionDescription(session));
+}
+
+export function accessibleEventLabel(event: FleetEvent): string {
+  return accessibleName(eventLabel(event), eventDescription(event));
+}
+
 // ---- event stream status --------------------------------------------------
 
 export function eventStreamStatusKind(status: EventStreamStatus | null): StatusKind {

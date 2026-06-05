@@ -114,25 +114,28 @@ export function getChatHtml(options: ChatHtmlOptions): string {
     button:disabled { opacity: 0.5; cursor: default; }
     select { color: var(--vscode-dropdown-foreground); background: var(--vscode-dropdown-background); }
     label.intent { color: var(--vscode-descriptionForeground); font-size: 0.85em; display: flex; gap: 4px; align-items: center; }
+    /* A theme-driven focus ring on every keyboard-focused control (a11y + high
+       contrast): --vscode-focusBorder is defined across light/dark/HC themes. */
+    :focus-visible { outline: 2px solid var(--vscode-focusBorder); outline-offset: 1px; }
   </style>
 </head>
 <body>
   <header>
     <span class="title" id="header-title">${escapeHtml(title)}</span>
     <span class="meta" id="header-meta"></span>
-    <span id="status">connecting…</span>
+    <span id="status" role="status" aria-live="polite">connecting…</span>
   </header>
-  <div id="log"><div class="empty" id="empty">No messages yet.</div></div>
-  <section id="pending" hidden>
+  <div id="log" role="log" aria-live="polite" aria-label="Conversation"><div class="empty" id="empty">No messages yet.</div></div>
+  <section id="pending" role="region" aria-label="Pending approval" aria-live="polite" hidden>
     <div class="kind" id="pending-kind"></div>
     <div class="prompt" id="pending-prompt"></div>
     <div class="actions" id="pending-actions"></div>
   </section>
   <footer>
-    <textarea id="input" placeholder="Message the agent…  (Enter to send, Shift+Enter for newline)"></textarea>
+    <textarea id="input" aria-label="Message to the agent" placeholder="Message the agent…  (Enter to send, Shift+Enter for newline)"></textarea>
     <div class="controls">
       <label class="intent" for="intent">Intent
-        <select id="intent" title="How the submit is delivered to the agent's loop">
+        <select id="intent" aria-label="Submit intent" title="How the submit is delivered to the agent's loop">
           <option value="default">default</option>
           <option value="follow_up">follow-up</option>
           <option value="interrupt_now">interrupt now</option>
@@ -201,6 +204,7 @@ export function getChatHtml(options: ChatHtmlOptions): string {
         for (const action of actions) {
           const btn = document.createElement('button');
           btn.textContent = action;
+          btn.setAttribute('aria-label', 'Respond: ' + action);
           btn.addEventListener('click', function () {
             vscode.postMessage({ type: 'respond', action: action });
           });
@@ -254,6 +258,9 @@ export function getChatHtml(options: ChatHtmlOptions): string {
         if (msg && msg.type === 'state') render(msg.state);
       });
 
+      // Land keyboard focus in the message box when the panel opens so a
+      // keyboard/screen-reader user can type immediately (a11y, Phase 3).
+      els.input.focus();
       vscode.postMessage({ type: 'ready' });
     })();
   </script>

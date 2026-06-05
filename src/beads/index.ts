@@ -44,6 +44,8 @@ export {
 
 export { formatBeadDetailMarkdown } from "./detail.ts";
 
+export { accessibleBeadNodeLabel } from "./a11y.ts";
+
 export {
   buildDependencyGraph,
   layerGraph,

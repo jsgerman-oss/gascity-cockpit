@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  accessibleAgentLabel,
+  accessibleCityLabel,
+  accessibleEventLabel,
+  accessibleSessionLabel,
+  accessibleSupervisorLabel,
   agentDescription,
   agentLabel,
   agentStatusKind,
@@ -171,5 +176,42 @@ describe('eventStreamStatusKind', () => {
     expect(eventStreamStatusKind({ state: 'connecting', detail: '', attempt: 0 })).toBe('busy');
     expect(eventStreamStatusKind({ state: 'reconnecting', detail: '', attempt: 2 })).toBe('warn');
     expect(eventStreamStatusKind({ state: 'stopped', detail: '', attempt: 0 })).toBe('off');
+  });
+});
+
+describe('accessible labels', () => {
+  const city = (over: Partial<CityInfo> = {}): CityInfo => ({
+    name: 'blackrim-hq',
+    path: '/Users/jayse/Code',
+    running: true,
+    ...over,
+  });
+
+  it('folds the supervisor description into one accessible phrase', () => {
+    expect(accessibleSupervisorLabel(health())).toBe('Supervisor — ok, 0.1.0 · 1/2 cities · up 1h 1m');
+    expect(accessibleSupervisorLabel(null)).toBe('Supervisor — unknown, not connected');
+  });
+
+  it('names a city and appends an error marker when present', () => {
+    expect(accessibleCityLabel(city({ status: 'healthy' }))).toBe('City blackrim-hq, healthy');
+    expect(accessibleCityLabel(city({ error: 'boom' }))).toBe('City blackrim-hq, running, error');
+  });
+
+  it('spells out an agent and its unavailability reason', () => {
+    expect(accessibleAgentLabel(agent({ state: 'idle' }))).toBe('gastown.rictus, idle');
+    expect(accessibleAgentLabel(agent({ available: false, unavailable_reason: 'drained' }))).toBe(
+      'gastown.rictus, idle, unavailable: drained',
+    );
+  });
+
+  it('joins a session label with its description', () => {
+    expect(accessibleSessionLabel(session({ state: 'running', active_bead: 'b1', template: 'polecat' }))).toBe(
+      'Polecat work, running · b1 · polecat · anthropic',
+    );
+  });
+
+  it('joins an event label with its description', () => {
+    const evt: FleetEvent = { seq: 1, type: 'session.updated', ts: '', actor: 'controller', city: 'blackrim-hq', message: 'woke' };
+    expect(accessibleEventLabel(evt)).toBe('session.updated, blackrim-hq · controller · woke');
   });
 });

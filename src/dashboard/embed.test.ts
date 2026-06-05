@@ -112,4 +112,9 @@ describe("buildPlaceholderHtml", () => {
     expect(html).toContain(`"channel":"${EMBED_CHANNEL}"`);
     expect(html).toContain('id="gc-configure"');
   });
+
+  it("gives the button a theme-driven focus ring and a high-contrast-safe border", () => {
+    expect(html).toContain("button:focus-visible { outline: 2px solid var(--vscode-focusBorder)");
+    expect(html).toContain("var(--vscode-contrastBorder, transparent)");
+  });
 });

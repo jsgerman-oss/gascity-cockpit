@@ -139,4 +139,18 @@ describe("renderGraphSvg", () => {
     const svg = renderGraphSvg(graph);
     expect((svg.match(/class="gc-edge"/g) ?? []).length).toBe(0);
   });
+
+  it("exposes nodes as focusable, named buttons for keyboard + screen-reader use", () => {
+    const graph = buildDependencyGraph(
+      makeGraph({ root: makeBead({ id: "root", title: "Root bead", status: "open" }), beads: [makeBead({ id: "root", title: "Root bead" })] }),
+    );
+    const svg = renderGraphSvg(graph);
+    // The container is a group (not role=img), so its node buttons stay reachable.
+    expect(svg).toContain('role="group"');
+    expect(svg).not.toContain('role="img"');
+    expect(svg).toContain('role="button"');
+    expect(svg).toContain('tabindex="0"');
+    // The node's accessible name folds in id, status, and title.
+    expect(svg).toContain('aria-label="root, Open, Root bead"');
+  });
 });

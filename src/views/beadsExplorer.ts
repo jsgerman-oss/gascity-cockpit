@@ -10,6 +10,7 @@
 import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
 import {
+  accessibleBeadNodeLabel,
   BeadsApiError,
   BeadsRepository,
   beadRig,
@@ -149,6 +150,14 @@ class BeadsTreeDataProvider implements vscode.TreeDataProvider<BeadTreeNode> {
 }
 
 function toTreeItem(node: BeadTreeNode): vscode.TreeItem {
+  const item = buildTreeItem(node);
+  // Fold the icon-conveyed status into the accessible name so screen-reader
+  // users hear what sighted users see in the status icon (a11y, Phase 3).
+  item.accessibilityInformation = { label: accessibleBeadNodeLabel(node) };
+  return item;
+}
+
+function buildTreeItem(node: BeadTreeNode): vscode.TreeItem {
   switch (node.kind) {
     case "city": {
       const item = new vscode.TreeItem(node.city, vscode.TreeItemCollapsibleState.Expanded);
@@ -329,13 +338,23 @@ class BeadGraphView {
       ".gc-wrap { overflow: auto; }",
       ".gc-error { color: var(--vscode-errorForeground); }",
       "</style></head><body>",
-      '<div class="gc-hint">Click a bead to open its detail.</div>',
+      '<div class="gc-hint">Tab to a bead and press Enter, or click it, to open its detail.</div>',
       body,
       `<script nonce="${nonce}">`,
       "const vscode = acquireVsCodeApi();",
-      "document.addEventListener('click', (e) => {",
-      "  const g = e.target.closest('[data-id]');",
+      "function openFrom(target) {",
+      "  const g = target.closest('[data-id]');",
       "  if (g) vscode.postMessage({ type: 'open', id: g.getAttribute('data-id') });",
+      "}",
+      "document.addEventListener('click', (e) => openFrom(e.target));",
+      // Keyboard activation: the graph nodes are role=button + tabindex=0, so
+      // Enter/Space must trigger the same open as a click (a11y, Phase 3).
+      "document.addEventListener('keydown', (e) => {",
+      "  if (e.key !== 'Enter' && e.key !== ' ') return;",
+      "  const g = e.target.closest('[data-id]');",
+      "  if (!g) return;",
+      "  e.preventDefault();",
+      "  vscode.postMessage({ type: 'open', id: g.getAttribute('data-id') });",
       "});",
       "</script></body></html>",
     ].join("\n");

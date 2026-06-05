@@ -142,6 +142,8 @@ const PAD = 18;
 const GRAPH_STYLE = `<style>
   .gc-node rect { fill: var(--vscode-editorWidget-background, #252526); stroke: var(--vscode-widget-border, #454545); stroke-width: 1; }
   .gc-node { cursor: pointer; }
+  .gc-node:focus { outline: none; }
+  .gc-node:focus-visible rect { stroke: var(--vscode-focusBorder, #007acc); stroke-width: 3; }
   .gc-node-id { fill: var(--vscode-foreground, #ccc); font: 600 12px var(--vscode-font-family, sans-serif); }
   .gc-node-title { fill: var(--vscode-descriptionForeground, #999); font: 11px var(--vscode-font-family, sans-serif); }
   .gc-edge { fill: none; stroke: var(--vscode-editorIndentGuide-activeBackground, #777); stroke-width: 1.5; }
@@ -198,8 +200,12 @@ export function renderGraphSvg(graph: DepGraph, layout: GraphLayout = layerGraph
     const ny = y(pos.lane);
     const status = statusOf(bead);
     const isRoot = id === graph.rootId;
+    // Each node is an operable button: focusable (tabindex) and named for screen
+    // readers via aria-label (the truncated <text> below is decorative). The
+    // webview shell wires Enter/Space + click to open the bead (a11y, Phase 3).
+    const ariaLabel = escapeXml(`${id}, ${displayStatusLabel(status)}${bead.title ? `, ${bead.title}` : ""}`);
     nodeMarkup.push(
-      `<g class="gc-node status-${cssToken(status)}${isRoot ? " gc-root" : ""}" data-id="${escapeXml(id)}">` +
+      `<g class="gc-node status-${cssToken(status)}${isRoot ? " gc-root" : ""}" data-id="${escapeXml(id)}" tabindex="0" role="button" aria-label="${ariaLabel}">` +
         `<rect x="${nx}" y="${ny}" rx="8" ry="8" width="${BOX_W}" height="${BOX_H}"/>` +
         `<text class="gc-node-id" x="${nx + 10}" y="${ny + 19}">${escapeXml(truncate(id, 24))}</text>` +
         `<text class="gc-node-title" x="${nx + 10}" y="${ny + 36}">${escapeXml(truncate(bead.title ?? "", 28))}</text>` +
@@ -208,7 +214,9 @@ export function renderGraphSvg(graph: DepGraph, layout: GraphLayout = layerGraph
   }
 
   return [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="Bead dependency graph">`,
+    // role="group" (not "img"): the node buttons inside must stay reachable by
+    // assistive tech — role="img" would collapse the whole graph to one opaque image.
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="group" aria-label="Bead dependency graph">`,
     GRAPH_STYLE,
     "<defs>",
     '<marker id="gc-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">',

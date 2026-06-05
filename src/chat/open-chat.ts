@@ -1,13 +1,15 @@
 // The `gascityCockpit.openChat` command implementation: resolve a client from
 // the current connection, pick a city + session, and open a {@link ChatPanel}.
-// Pure vscode glue (PRD: thin editor layer) — the testable bits (session
-// ranking, the conversation store) live elsewhere. City selection here is a
-// simple prompt; richer multi-city selection is a separate concern (PRD Story 2).
+// Pure vscode glue (PRD: thin editor layer) — the testable bits (city/session
+// ranking, the conversation store) live elsewhere. City selection lists the
+// supervisor's cities in a QuickPick (PRD Story 2: multi-city switching), and
+// falls back to a text box when the list can't be fetched.
 import * as vscode from "vscode";
 import * as path from "node:path";
-import { createCockpitClient, listSessions, type CockpitClient } from "../api/index.ts";
+import { createCockpitClient, listCities, listSessions, type CockpitClient } from "../api/index.ts";
 import { DEFAULT_SUPERVISOR_BASE_URL, type ApiEndpoint, type Logger } from "../discovery/index.ts";
 import { ChatPanel } from "./chat-panel.ts";
+import { cityPickLabel, rankCitiesForPicker } from "./city-picker.ts";
 import { ConversationStore } from "./conversation-store.ts";
 import { rankSessionsForChat, sessionPickLabel } from "./session-picker.ts";
 
@@ -29,7 +31,7 @@ export async function openChat(args: OpenChatArgs): Promise<void> {
     ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
   });
 
-  const cityName = args.preset?.cityName ?? (await promptCity());
+  const cityName = args.preset?.cityName ?? (await pickCity(client, args.log));
   if (!cityName) {
     return;
   }
@@ -43,13 +45,45 @@ export async function openChat(args: OpenChatArgs): Promise<void> {
   ChatPanel.create(store);
 }
 
-async function promptCity(): Promise<string | undefined> {
+/**
+ * Pick a city to chat in. Lists the supervisor's cities (running first, the open
+ * workspace's city floated to the top) in a QuickPick; falls back to a text box
+ * when the supervisor can't be listed or knows of no cities, so an offline or
+ * single-city operator is never blocked.
+ */
+async function pickCity(client: CockpitClient, log: Logger): Promise<string | undefined> {
+  const result = await listCities(client);
+  if (!result.ok) {
+    log("warn", `chat: could not list cities: ${result.error.title}`);
+    return promptCity("Couldn't list cities — enter a city name");
+  }
+
+  const cities = result.data.items ?? [];
+  if (cities.length === 0) {
+    return promptCity("No cities registered — enter a city name");
+  }
+
+  const ranked = rankCitiesForPicker(cities, workspaceCityName());
+  const pick = await vscode.window.showQuickPick(ranked.map(cityPickLabel), {
+    title: "GasCity Cockpit: Chat",
+    placeHolder: "Select a city to chat in (running cities first)",
+    matchOnDescription: true,
+    matchOnDetail: true,
+  });
+  return pick?.name;
+}
+
+/** The open workspace folder's basename — a good default city guess. */
+function workspaceCityName(): string {
   const folder = vscode.workspace.workspaceFolders?.[0];
-  const prefill = folder && folder.uri.scheme === "file" ? path.basename(folder.uri.fsPath) : "";
+  return folder && folder.uri.scheme === "file" ? path.basename(folder.uri.fsPath) : "";
+}
+
+async function promptCity(prompt = "City name"): Promise<string | undefined> {
   const value = await vscode.window.showInputBox({
     title: "GasCity Cockpit: Chat",
-    prompt: "City name",
-    value: prefill,
+    prompt,
+    value: workspaceCityName(),
     ignoreFocusOut: true,
   });
   return value?.trim() || undefined;
