@@ -107,7 +107,12 @@ describe("contributes manifests", () => {
 
   it("preserves the activity-bar view order", () => {
     const ids = (contributes.views as Record<string, { id: string }[]>).gascityCockpit.map((v) => v.id);
-    expect(ids).toEqual(["gascityCockpit.fleet", "gascityCockpit.events", "gascityCockpit.beads"]);
+    expect(ids).toEqual([
+      "gascityCockpit.fleet",
+      "gascityCockpit.events",
+      "gascityCockpit.beads",
+      "gascityCockpit.mergeQueue",
+    ]);
   });
 
   it("pairs each non-core manifest with a feature module", () => {

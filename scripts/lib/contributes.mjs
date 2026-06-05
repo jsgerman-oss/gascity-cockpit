@@ -30,6 +30,7 @@ export const FEATURE_ORDER = [
   'chat',
   'dashboard',
   'extmsg',
+  'mergeQueue',
 ];
 
 /** Read every `*.contributes.json` under `featuresDir`, in merge order. */

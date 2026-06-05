@@ -260,6 +260,7 @@ deferred until it is stable.
 - [Live status panes](docs/live-status-panes.md)
 - [Dashboard embed contract](docs/dashboard-embed-contract.md)
 - [Extmsg participant](docs/extmsg-participant.md)
+- [Merge queue review](docs/merge-queue-review.md)
 
 ## Contributing
 

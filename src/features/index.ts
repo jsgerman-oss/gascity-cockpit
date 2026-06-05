@@ -22,6 +22,7 @@ import chatFeature from './chat.feature.ts';
 import dashboardFeature from './dashboard.feature.ts';
 import extmsgFeature from './extmsg.feature.ts';
 import fleetQueryFeature from './fleetQuery.feature.ts';
+import mergeQueueFeature from './mergeQueue.feature.ts';
 
 /** Every cockpit feature, in activation order. Append new features here. */
 export const FEATURES: readonly CockpitFeature[] = [
@@ -33,6 +34,7 @@ export const FEATURES: readonly CockpitFeature[] = [
   dashboardFeature,
   extmsgFeature,
   fleetQueryFeature,
+  mergeQueueFeature,
 ];
 
 /** Activate every registered feature against the shared host. */
