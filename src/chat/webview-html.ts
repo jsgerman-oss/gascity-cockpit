@@ -104,7 +104,9 @@ export function getChatHtml(options: ChatHtmlOptions): string {
       font-size: inherit;
       color: var(--vscode-button-foreground);
       background: var(--vscode-button-background);
-      border: 1px solid var(--vscode-button-border, transparent);
+      /* Keep a visible edge in high-contrast themes (contrastBorder), not the
+         button background which would vanish against the fill. */
+      border: 1px solid var(--vscode-button-border, var(--vscode-contrastBorder, transparent));
       border-radius: 4px;
       padding: 4px 10px;
       cursor: pointer;

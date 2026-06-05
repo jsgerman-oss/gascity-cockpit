@@ -46,6 +46,14 @@ describe("getChatHtml", () => {
     expect(html).toContain(":focus-visible { outline: 2px solid var(--vscode-focusBorder)");
   });
 
+  it("keeps controls themed in light/dark and bordered in high contrast", () => {
+    // color-scheme lets the UA paint native control chrome for the active theme.
+    expect(html).toContain(":root { color-scheme: light dark; }");
+    // Buttons/selects fall back to contrastBorder (not transparent) so they keep
+    // a visible edge under high-contrast themes, matching the dashboard placeholder.
+    expect(html).toContain("var(--vscode-button-border, var(--vscode-contrastBorder, transparent))");
+  });
+
   it("focuses the message box on load", () => {
     expect(html).toContain("els.input.focus()");
   });
