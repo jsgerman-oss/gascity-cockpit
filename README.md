@@ -10,6 +10,7 @@
   <a href="https://github.com/gastownhall/gascity"><img src="https://img.shields.io/badge/Built%20on-Gas%20City%20%2Fv0-c9a84c?style=for-the-badge" alt="Built on Gas City /v0"></a>
   <img src="https://img.shields.io/badge/version-0.0.1-3b82f6?style=for-the-badge" alt="Version 0.0.1">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License"></a>
+  <a href="https://jsgerman-oss.github.io/gascity-cockpit/"><img src="https://img.shields.io/badge/Website-live-2aa9e6?style=for-the-badge" alt="Website"></a>
 </p>
 
 GasCity Cockpit turns VS Code into a live cockpit for the gas cities you operate. Instead
@@ -202,6 +203,41 @@ docs/                   PRD + contracts
   and a dependency-graph webview. The domain layer (`beads/`) has no `vscode`
   import and is unit-tested against a mock `/v0`; the editor surfaces (`views/`)
   are the thin glue. See [docs/beads-explorer.md](docs/beads-explorer.md).
+
+## Install
+
+> Alpha: install from source; not on the VS Code Marketplace yet. Take the tour on the [website](https://jsgerman-oss.github.io/gascity-cockpit/).
+
+The Cockpit is two halves: the **extension** (the client) and a thin **pack** that makes a gas city *Cockpit-ready*.
+
+**1. Build and install the extension**
+
+```bash
+git clone https://github.com/jsgerman-oss/gascity-cockpit
+cd gascity-cockpit
+npm install
+npm run package            # produces gascity-cockpit-<version>.vsix
+code --install-extension gascity-cockpit-*.vsix
+```
+
+Or press <kbd>F5</kbd> for an Extension Development Host while hacking on it.
+
+**2. Make a city Cockpit-ready**
+
+The pack verifies the supervisor's `/v0` API and publishes the discovery descriptor the extension auto-reads. Turn it on for a city (reversible, idempotent; `--dry-run` previews):
+
+```bash
+# from this repo; --city points at your gas city's root
+pack/install.sh --town --city /path/to/your-city
+# publish the descriptor the extension discovers
+/path/to/your-city/packs/cockpit/bin/cockpit discover --write
+```
+
+Use `--rig <name>` to scope it to a single rig instead of `--town`. See [pack/docs/DESIGN.md](pack/docs/DESIGN.md) for the discovery handshake.
+
+**3. Connect**
+
+Open the city's workspace in VS Code. The Cockpit auto-discovers the supervisor (default `http://127.0.0.1:8372`; override with the `gascityCockpit.api.url` setting). Run **GasCity Cockpit: Check API Connection** from the command palette to confirm.
 
 ## Prerequisites
 
