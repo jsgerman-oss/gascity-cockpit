@@ -3,9 +3,15 @@
     {
       "command": "gascityCockpit.openDashboard",
       "title": "GasCity Cockpit: Open Dashboard",
-      "category": "GasCity Cockpit"
+      "category": "GasCity Cockpit",
+      "icon": "$(dashboard)"
     }
   ],
+  "menus": {
+    "view/title": [
+      { "command": "gascityCockpit.openDashboard", "when": "view == gascityCockpit.fleet", "group": "navigation@5" }
+    ]
+  },
   "configuration": {
     "properties": {
       "gascityCockpit.dashboard.url": {

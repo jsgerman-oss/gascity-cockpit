@@ -6,5 +6,10 @@
       "category": "GasCity Cockpit",
       "icon": "$(search)"
     }
-  ]
+  ],
+  "menus": {
+    "view/title": [
+      { "command": "gascityCockpit.fleetQuery.open", "when": "view == gascityCockpit.fleet", "group": "navigation@4" }
+    ]
+  }
 }

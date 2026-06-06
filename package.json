@@ -194,7 +194,8 @@
       {
         "command": "gascityCockpit.openDashboard",
         "title": "GasCity Cockpit: Open Dashboard",
-        "category": "GasCity Cockpit"
+        "category": "GasCity Cockpit",
+        "icon": "$(dashboard)"
       },
       {
         "command": "gascityCockpit.extmsg.showStatus",
@@ -343,6 +344,11 @@
           "group": "navigation@0"
         },
         {
+          "command": "gascityCockpit.openDashboard",
+          "when": "view == gascityCockpit.fleet",
+          "group": "navigation@5"
+        },
+        {
           "command": "gascityCockpit.mergeQueue.toggleMerged",
           "when": "view == gascityCockpit.mergeQueue",
           "group": "navigation@1"
@@ -351,6 +357,11 @@
           "command": "gascityCockpit.mergeQueue.refresh",
           "when": "view == gascityCockpit.mergeQueue",
           "group": "navigation@2"
+        },
+        {
+          "command": "gascityCockpit.fleetQuery.open",
+          "when": "view == gascityCockpit.fleet",
+          "group": "navigation@4"
         },
         {
           "command": "gascityCockpit.timeTravel.open",
