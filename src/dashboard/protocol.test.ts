@@ -93,6 +93,23 @@ describe("parseDashboardMessage", () => {
       parseDashboardMessage({ channel: "other", protocol: 1, type: DASHBOARD_READY }),
     ).toBeNull();
   });
+
+  it("rejects malformed routes (non-object or non-string city/view/path)", () => {
+    const bad = (route: unknown) => parseDashboardMessage(envelope(DASHBOARD_ROUTE_CHANGED, { route }));
+    expect(bad("nope")).toBeNull(); // route not an object
+    expect(bad({ city: 7 })).toBeNull(); // city not a string
+    expect(bad({ view: 7 })).toBeNull(); // view not a string
+    expect(bad({ path: 7 })).toBeNull(); // path not a string
+    // A route carrying a valid path is accepted (covers the happy path arm).
+    const ok = parseDashboardMessage(envelope(DASHBOARD_ROUTE_CHANGED, { route: { path: "/agents" } }));
+    if (ok?.type === DASHBOARD_ROUTE_CHANGED) expect(ok.route.path).toBe("/agents");
+  });
+
+  it("rejects a navigate-native target with a non-string city", () => {
+    expect(
+      parseDashboardMessage(envelope(DASHBOARD_NAVIGATE_NATIVE, { target: { kind: "bead", id: "x", city: 7 } })),
+    ).toBeNull();
+  });
 });
 
 describe("parseHostMessage", () => {
@@ -126,5 +143,42 @@ describe("parseHostMessage", () => {
     const apiMsg = parseHostMessage(envelope(HOST_API, { api: { baseUrl: "http://h:1", token: "t" } }));
     expect(apiMsg?.type).toBe(HOST_API);
     expect(parseHostMessage(envelope(HOST_API, { api: { token: "t" } }))).toBeNull(); // no baseUrl
+  });
+
+  it("rejects non-embed input, unknown host types, and an invalid navigate route", () => {
+    expect(parseHostMessage(null)).toBeNull(); // not an embed message at all
+    expect(parseHostMessage({ channel: "other", protocol: 1, type: HOST_CONFIG })).toBeNull(); // wrong channel
+    expect(parseHostMessage(envelope("host/unknown"))).toBeNull(); // unrecognised type (default arm)
+    expect(parseHostMessage(envelope(HOST_NAVIGATE, { route: "bad" }))).toBeNull(); // route fails to parse
+  });
+
+  it("accepts a theme with name + tokens and rejects malformed ones", () => {
+    const ok = parseHostMessage(
+      envelope(HOST_THEME, { theme: { kind: "dark", name: "Default Dark", tokens: { foreground: "#fff" } } }),
+    );
+    expect(ok?.type).toBe(HOST_THEME);
+    if (ok?.type === HOST_THEME) {
+      expect(ok.theme.name).toBe("Default Dark");
+      expect(ok.theme.tokens).toEqual({ foreground: "#fff" });
+    }
+    expect(parseHostMessage(envelope(HOST_THEME, { theme: { kind: "dark", name: 5 } }))).toBeNull();
+    expect(parseHostMessage(envelope(HOST_THEME, { theme: { kind: "dark", tokens: { a: 1 } } }))).toBeNull();
+  });
+
+  it("rejects an api access with a non-string, non-null token", () => {
+    expect(parseHostMessage(envelope(HOST_API, { api: { baseUrl: "http://h:1", token: 5 } }))).toBeNull();
+  });
+
+  it("rejects configs with a bad protocol, capabilities, city, or route", () => {
+    const base = { protocol: EMBED_PROTOCOL_VERSION, api, theme, capabilities };
+    const cfg = (over: Record<string, unknown>) =>
+      parseHostMessage(envelope(HOST_CONFIG, { config: { ...base, ...over } }));
+    expect(cfg({ protocol: "1" })).toBeNull(); // protocol not a number
+    expect(cfg({ capabilities: { canOpenNative: "yes", canOpenExternal: true } })).toBeNull(); // caps not boolean
+    expect(cfg({ city: 7 })).toBeNull(); // city not a string
+    expect(cfg({ route: "bad" })).toBeNull(); // route fails to parse
+    const ok = cfg({ route: { city: "hq", view: "agents" } }); // a valid embedded route is accepted
+    expect(ok?.type).toBe(HOST_CONFIG);
+    if (ok?.type === HOST_CONFIG) expect(ok.config.route).toEqual({ city: "hq", view: "agents" });
   });
 });

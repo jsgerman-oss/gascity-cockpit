@@ -201,4 +201,27 @@ describe("normalizeError", () => {
     expect(normalized.title).toBe("Request failed");
     expect(normalized.status).toBe(0);
   });
+
+  it("falls back to the response status/statusText when the problem doc omits them", () => {
+    const response = new Response(null, { status: 503, statusText: "Service Unavailable" });
+    // isErrorModel is true (has `type`) but carries neither status nor title, so
+    // both `?? response?.…` arms must be taken.
+    const normalized = normalizeError({ type: "urn:gascity:error:x" }, response);
+    expect(normalized.status).toBe(503);
+    expect(normalized.title).toBe("Service Unavailable");
+  });
+
+  it("falls back to status 0 and a generic title for a bare problem doc with no response", () => {
+    const normalized = normalizeError({ type: "urn:gascity:error:x" });
+    expect(normalized.status).toBe(0);
+    expect(normalized.title).toBe("Request failed");
+  });
+
+  it("uses the response status for a thrown Error when a response is present", () => {
+    const response = new Response(null, { status: 500 });
+    const normalized = normalizeError(new TypeError("boom"), response);
+    expect(normalized.status).toBe(500);
+    expect(normalized.title).toBe("Network error");
+    expect(normalized.detail).toBe("boom");
+  });
 });

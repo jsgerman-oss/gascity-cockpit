@@ -78,6 +78,26 @@ test('parseDescriptor rejects a non-string token', () => {
   assert.throws(() => parseDescriptor(JSON.stringify({ ...valid, token: 42 })), /token/);
 });
 
+test('parseDescriptor rejects a non-object body', () => {
+  assert.throws(() => parseDescriptor('42'), /must be a JSON object/);
+  assert.throws(() => parseDescriptor('[]'), /must be a JSON object/);
+});
+
+test('parseDescriptor rejects a non-integer schema_version', () => {
+  assert.throws(() => parseDescriptor(JSON.stringify({ ...valid, schema_version: '1' })), /schema_version/);
+  assert.throws(() => parseDescriptor(JSON.stringify({ ...valid, schema_version: 1.5 })), /schema_version/);
+});
+
+test('parseDescriptor rejects an invalid host', () => {
+  assert.throws(() => parseDescriptor(JSON.stringify({ ...valid, host: '' })), /host/);
+  assert.throws(() => parseDescriptor(JSON.stringify({ ...valid, host: 42 })), /host/);
+});
+
+test('parseDescriptor rejects an invalid api_version', () => {
+  assert.throws(() => parseDescriptor(JSON.stringify({ ...valid, api_version: '' })), /api_version/);
+  assert.throws(() => parseDescriptor(JSON.stringify({ ...valid, api_version: 7 })), /api_version/);
+});
+
 test('descriptorToEndpoint projects with source', () => {
   const ep = descriptorToEndpoint(parseDescriptor(JSON.stringify(valid)), 'descriptor');
   assert.deepEqual(ep, { baseUrl: 'http://127.0.0.1:8372', token: null, mode: 'supervisor', source: 'descriptor' });
@@ -91,6 +111,19 @@ test('buildDescriptor + serialize + parse round-trips', () => {
   assert.equal(back.base_url, 'http://127.0.0.1:9443');
   assert.equal(back.mode, 'standalone');
   assert.equal(back.pid, 7);
+});
+
+test('buildDescriptor carries build_id + started_at when provided', () => {
+  const built = buildDescriptor({
+    host: '127.0.0.1',
+    port: 9443,
+    mode: 'standalone',
+    api_version: '0.1.0',
+    build_id: 'bid-1',
+    started_at: '2026-06-05T06:24:22Z',
+  });
+  assert.equal(built.build_id, 'bid-1');
+  assert.equal(built.started_at, '2026-06-05T06:24:22Z');
 });
 
 test('well-known descriptor paths follow gascity conventions', () => {

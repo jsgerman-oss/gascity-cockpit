@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { FormulaDetail, FormulaRuns } from "../api/formulas";
+import type { FormulaDetail, FormulaRun, FormulaRuns } from "../api/formulas";
 import {
   formatFormulaDetailMarkdown,
   formatRunsMarkdown,
@@ -56,6 +56,12 @@ describe("runState", () => {
     expect(runStateLabel(runState("running"))).toBe("Running");
     expect(runStateLabel(runState("nope"))).toBe("Unknown");
   });
+
+  it("labels the failed, done, and pending states", () => {
+    expect(runStateLabel("failed")).toBe("Failed");
+    expect(runStateLabel("done")).toBe("Done");
+    expect(runStateLabel("pending")).toBe("Pending");
+  });
 });
 
 describe("formatFormulaDetailMarkdown", () => {
@@ -91,6 +97,39 @@ describe("formatFormulaDetailMarkdown", () => {
     expect(md).toContain("_No steps._");
     expect(md).toContain("_The compiled preview is empty._");
     expect(md).not.toContain("Compiled for");
+  });
+
+  it("tolerates null var_defs/steps and an absent preview", () => {
+    // The server can send these as null; the `?? []` / `?.` fallbacks must hold.
+    const bare = { name: "bare", description: "", deps: [], steps: null, var_defs: null } as unknown as FormulaDetail;
+    const md = formatFormulaDetailMarkdown(bare);
+    expect(md).toContain("# Formula: bare");
+    expect(md).toContain("_No steps._");
+    expect(md).toContain("_The compiled preview is empty._");
+    expect(md).not.toContain("## Variables");
+  });
+
+  it("renders a typed step, a kindless edge, and sanitises odd node ids/labels", () => {
+    const detail = {
+      name: "edges",
+      description: "x",
+      deps: [],
+      steps: [{ id: "s1", kind: "step", type: "wisp", title: "Typed step" }],
+      var_defs: [],
+      preview: {
+        nodes: [
+          { id: "1-start", kind: "step", title: "" }, // empty title => id; digit-led id => n_ prefix
+          { id: "next", kind: "step", title: "Next" },
+        ],
+        edges: [{ from: "1-start", to: "next" }], // no kind => plain arrow + no verb
+      },
+    } as unknown as FormulaDetail;
+    const md = formatFormulaDetailMarkdown(detail);
+    expect(md).toContain("type `wisp`"); // step.type rendered
+    expect(md).toContain('n_1_start["1-start"]'); // numeric id sanitised, title falls back to id
+    expect(md).toContain("n_1_start --> next"); // kindless edge => plain arrow
+    expect(md).toContain("- `1-start` → `next`"); // edge list entry, no " (kind)" verb
+    expect(md).not.toContain("- `1-start` → `next` (");
   });
 });
 
@@ -139,6 +178,27 @@ describe("formatRunsMarkdown", () => {
     expect(md).toContain("## Warnings");
     expect(md).toContain("rig x offline");
   });
+
+  it("tolerates a null recent_runs list", () => {
+    const md = formatRunsMarkdown({ formula: "tdd", partial: false, run_count: 0, recent_runs: null }, now);
+    expect(md).toContain("_No runs yet.");
+  });
+
+  it("dashes out empty status/target/workflow fields", () => {
+    const md = formatRunsMarkdown(
+      {
+        formula: "tdd",
+        partial: false,
+        run_count: 1,
+        recent_runs: [
+          { workflow_id: "", status: "", target: "", started_at: "2026-06-05T00:59:00Z", updated_at: "2026-06-05T00:59:30Z" },
+        ],
+      },
+      now,
+    );
+    expect(md).toContain("`—`"); // empty status/target/workflow all rendered as a dash
+    expect(md).toContain("Unknown"); // empty status => unknown state
+  });
 });
 
 describe("sortRunsNewestFirst / relativeTime", () => {
@@ -161,5 +221,17 @@ describe("sortRunsNewestFirst / relativeTime", () => {
     expect(relativeTime("2026-06-05T12:00:30Z", now)).toBe("just now");
     expect(relativeTime(undefined, now)).toBe("—");
     expect(relativeTime("not-a-date", now)).toBe("`not-a-date`");
+  });
+
+  it("runTime falls back to updated_at, then 0, when started_at is missing", () => {
+    // started_at missing => parse "" => NaN => fall back to updated_at; both
+    // missing => 0. Drives the sort order deterministically.
+    const runs = [
+      { workflow_id: "valid", status: "done", target: "p", started_at: "2026-06-03T00:00:00Z" },
+      { workflow_id: "updated-only", status: "done", target: "p", updated_at: "2026-06-02T00:00:00Z" },
+      { workflow_id: "neither", status: "done", target: "p" },
+    ] as unknown as FormulaRun[];
+    const sorted = sortRunsNewestFirst(runs);
+    expect(sorted.map((r) => r.workflow_id)).toEqual(["valid", "updated-only", "neither"]);
   });
 });

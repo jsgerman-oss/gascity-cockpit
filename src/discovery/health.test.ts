@@ -94,3 +94,37 @@ test('probeHealth aborts on timeout', async () => {
     });
   await assert.rejects(probeHealth('http://x:1', { fetchImpl, timeoutMs: 10 }), /timed out/);
 });
+
+test('probeHealth throws when no fetch implementation is available', async () => {
+  // A non-undefined, non-function value skips the destructuring default and hits
+  // the `typeof fetchImpl !== "function"` guard.
+  await assert.rejects(
+    probeHealth('http://x:1', { fetchImpl: null as unknown as FetchLike }),
+    /no fetch implementation/,
+  );
+});
+
+test('probeHealth registers and cleans up a caller abort listener', async () => {
+  const fetchImpl: FetchLike = async () => new Response(liveBody, { status: 200 });
+  const controller = new AbortController();
+  const h = await probeHealth('http://x:1', { fetchImpl, signal: controller.signal });
+  assert.equal(h.status, 'ok');
+  // The finally block removed the listener; aborting now must not throw.
+  controller.abort();
+});
+
+test('probeHealth honors a caller signal already aborted before the probe', async () => {
+  const fetchImpl: FetchLike = (_url, init) =>
+    init?.signal?.aborted
+      ? Promise.reject(init.signal.reason ?? new Error('aborted'))
+      : Promise.resolve(new Response(liveBody, { status: 200 }));
+  const signal = AbortSignal.abort(new ProbeError('cancelled by caller'));
+  await assert.rejects(probeHealth('http://x:1', { fetchImpl, signal }), /cancelled by caller/);
+});
+
+test('probeHealth stringifies a thrown non-Error value', async () => {
+  const fetchImpl: FetchLike = async () => {
+    throw 'kaboom'; // a bare string has no `.message`, so the `?? String(err)` arm runs
+  };
+  await assert.rejects(probeHealth('http://x:1', { fetchImpl }), /health probe failed: kaboom/);
+});

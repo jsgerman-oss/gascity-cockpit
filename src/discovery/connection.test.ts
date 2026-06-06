@@ -272,3 +272,144 @@ test('generation guard: a probe resolving after stop() does not change state', a
   await settle();
   assert.equal(h.mgr.status.state, 'idle'); // stale callback was ignored
 });
+
+// ---- defaults, idempotency & defensive guards ------------------------------
+
+test('constructs with default deps when only discover/probe are given', () => {
+  // Omitting now/setTimer/clearTimer/random/log takes every `?? default` arm in
+  // the constructor without arming a real timer (start() is never called).
+  const mgr = new ConnectionManager({
+    discover: async () => DISCOVER_OK,
+    probe: async () => health(),
+  });
+  assert.equal(mgr.status.state, 'idle');
+  mgr.dispose(); // stop() early-returns (already idle) + emitter disposed
+  assert.equal(mgr.status.state, 'idle');
+});
+
+test('start() is idempotent while already running', async () => {
+  const h = harness();
+  h.mgr.start();
+  h.mgr.start(); // second call hits the `if (this.running) return` guard
+  await h.sched.runNext();
+  assert.equal(h.mgr.status.state, 'connected');
+  assert.equal(h.discoverCalls(), 1); // not double-scheduled
+});
+
+test('reconnect() before start() just starts the manager', async () => {
+  const h = harness();
+  h.mgr.reconnect(); // !running -> start()
+  await h.sched.runNext();
+  assert.equal(h.mgr.status.state, 'connected');
+});
+
+test('stop() is a no-op when already idle', () => {
+  const h = harness();
+  h.mgr.stop(); // !running && idle -> early return, no transition fired
+  assert.deepEqual(h.states, []);
+  assert.equal(h.mgr.status.state, 'idle');
+});
+
+test('a thrown discovery error drives onFailure with the Error message', async () => {
+  const h = harness({
+    discover: async () => {
+      throw new Error('boom');
+    },
+  });
+  h.mgr.start();
+  await h.sched.runNext();
+  assert.equal(h.mgr.status.state, 'reconnecting');
+  assert.match(h.mgr.status.detail, /discovery error: boom/);
+});
+
+test('a non-Error thrown from discovery is stringified', async () => {
+  const h = harness({
+    discover: async () => {
+      throw 'plain string';
+    },
+  });
+  h.mgr.start();
+  await h.sched.runNext();
+  assert.match(h.mgr.status.detail, /discovery error: plain string/);
+});
+
+test('summarizeDiscovery renders empty / ok / reasonless attempts', async () => {
+  const empty = harness({ discover: async () => ({ ok: false, endpoint: null, attempts: [] }) });
+  empty.mgr.start();
+  await empty.sched.runNext();
+  assert.match(empty.mgr.status.detail, /no candidates/);
+
+  const mixed = harness({
+    discover: async () => ({
+      ok: false,
+      endpoint: null,
+      attempts: [
+        { source: 'descriptor', target: 't', ok: true },
+        { source: 'default', target: 't', ok: false }, // no reason => "fail"
+      ],
+    }),
+  });
+  mixed.mgr.start();
+  await mixed.sched.runNext();
+  assert.match(mixed.mgr.status.detail, /descriptor:ok/);
+  assert.match(mixed.mgr.status.detail, /default:fail/);
+});
+
+test('a probe success arriving after stop() is ignored', async () => {
+  let release: (() => void) | null = null;
+  const gate = new Promise<void>((r) => {
+    release = r;
+  });
+  const h = harness({
+    probe: async () => {
+      await gate; // park inside the probe
+      return health();
+    },
+  });
+  h.mgr.start();
+  await h.sched.runNext(); // discovering -> connecting -> awaits gate
+  assert.equal(h.mgr.status.state, 'connecting');
+  h.mgr.stop();
+  release!();
+  await settle();
+  assert.equal(h.mgr.status.state, 'idle'); // post-probe-success guard returned
+});
+
+test('a probe rejection arriving after stop() is ignored', async () => {
+  let rejectProbe: ((e: Error) => void) | null = null;
+  const gate = new Promise<HealthResponse>((_res, rej) => {
+    rejectProbe = rej;
+  });
+  const h = harness({ probe: () => gate });
+  h.mgr.start();
+  await h.sched.runNext(); // -> connecting -> awaits gate
+  assert.equal(h.mgr.status.state, 'connecting');
+  h.mgr.stop();
+  rejectProbe!(new Error('late failure'));
+  await settle();
+  assert.equal(h.mgr.status.state, 'idle'); // probe-catch generation guard returned
+});
+
+test('tick bails at entry when no longer running', async () => {
+  // A no-op clearTimer leaves the scheduled callback invokable after stop(), so
+  // firing it exercises the `!this.running` arm of the tick entry guard.
+  const captured: Array<() => void> = [];
+  const mgr = new ConnectionManager({
+    discover: async () => DISCOVER_OK,
+    probe: async () => health(),
+    setTimer: (cb) => {
+      captured.push(cb);
+      return captured.length;
+    },
+    clearTimer: () => {},
+    random: () => 0.5,
+  });
+  const seen: ConnectionState[] = [];
+  mgr.onDidChangeStatus((s) => seen.push(s.state));
+  mgr.start(); // schedules captured[0]
+  mgr.stop(); // running=false; the no-op clearTimer leaves captured[0] live
+  seen.length = 0;
+  captured[0](); // fire the stale tick -> guard returns before any work
+  await settle();
+  assert.deepEqual(seen, []); // no transition from the stale callback
+});

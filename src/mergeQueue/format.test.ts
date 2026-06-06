@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   branchLine,
   buildQueueTree,
+  entryDescription,
+  entryLabel,
   entryTooltip,
+  loadErrorNode,
   prRef,
   stateIcon,
   stateLabel,
@@ -61,6 +64,30 @@ describe("prRef", () => {
   it("returns PR for an unparseable url", () => {
     expect(prRef("not a url")).toBe("PR");
   });
+
+  it("returns PR when a valid url yields neither host nor number", () => {
+    // A parseable URL with an empty hostname and no pull/MR number exercises the
+    // `|| "PR"` fallback (distinct from the unparseable-string catch path).
+    expect(prRef("file:///local/path")).toBe("PR");
+  });
+});
+
+describe("entryLabel / entryDescription", () => {
+  it("uses the bead id as the label and the title as the description", () => {
+    const e = entry({ beadId: "cockpit-1ll.9", title: "Wire the thing" });
+    expect(entryLabel(e)).toBe("cockpit-1ll.9");
+    expect(entryDescription(e)).toBe("Wire the thing");
+  });
+});
+
+describe("loadErrorNode", () => {
+  it("builds an error message row carrying the detail", () => {
+    const node = loadErrorNode("connection refused");
+    expect(node.kind).toBe("message");
+    expect(node.id).toBe("error");
+    expect(node.label).toContain("merge queue");
+    expect(node.detail).toBe("connection refused");
+  });
 });
 
 describe("entryTooltip", () => {
@@ -76,6 +103,11 @@ describe("entryTooltip", () => {
 
   it("shows a short merged sha", () => {
     expect(entryTooltip(entry({ state: "merged", mergedSha: "deadbeefcafe1234567" }))).toContain("`deadbeefcafe`");
+  });
+
+  it("includes a PR reference when a prUrl is recorded", () => {
+    const md = entryTooltip(entry({ prUrl: "https://github.com/o/r/pull/7" }));
+    expect(md).toContain("PR: github.com #7 — https://github.com/o/r/pull/7");
   });
 });
 

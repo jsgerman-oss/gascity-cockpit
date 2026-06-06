@@ -125,4 +125,10 @@ describe("buildPlaceholderHtml", () => {
   it("declares light+dark color-scheme so native UI follows the theme", () => {
     expect(html).toContain("color-scheme: light dark");
   });
+
+  it("omits the detail paragraph and defaults the action label when detail is absent", () => {
+    const bare = buildPlaceholderHtml({ nonce: "N", cspSource: CSP_SOURCE, message: "No URL." });
+    expect(bare).not.toContain('class="detail"');
+    expect(bare).toContain("Open Settings"); // default actionLabel
+  });
 });

@@ -17,7 +17,7 @@ import {
   unregisterAdapter,
   upsertParticipant,
 } from "./extmsg";
-import type { ConversationRef } from "./extmsg";
+import type { ConversationRef, ExternalInboundMessage } from "./extmsg";
 import { jsonResponse, mockFetch, problemResponse } from "../test/helpers";
 
 function client(handler: (req: Request) => Response | Promise<Response>) {
@@ -229,5 +229,103 @@ describe("extmsg transcript", () => {
     await ackTranscript(c, { cityName: CITY, sessionId: "mayor-1", conversation: CONV, sequence: 12 });
     expect(new URL(calls[0].url).pathname).toBe(`/v0/city/${CITY}/extmsg/transcript/ack`);
     expect(await calls[0].clone().json()).toEqual({ session_id: "mayor-1", conversation: CONV, sequence: 12 });
+  });
+});
+
+// Every optional body field / query param is a `cond ? {…} : {}` spread. The
+// tests above exercise one arm of each; these exercise the complement so both
+// the present and absent path of every optional field is covered.
+describe("extmsg optional-field arms (complementary coverage)", () => {
+  it("bindSession omits conversation + metadata when not given", async () => {
+    const { client: c, calls } = client(() => jsonResponse({ ID: "b1", SessionID: "mayor-1" }));
+    await bindSession(c, { cityName: CITY, sessionId: "mayor-1" });
+    expect(await calls[0].clone().json()).toEqual({ session_id: "mayor-1" });
+  });
+
+  it("listBindings omits the session_id filter when not given", async () => {
+    const { client: c, calls } = client(() => jsonResponse({ items: [], total: 0 }));
+    await listBindings(c, { cityName: CITY });
+    expect(new URL(calls[0].url).searchParams.has("session_id")).toBe(false);
+  });
+
+  it("unbindSession includes the conversation when given", async () => {
+    const { client: c, calls } = client(() => jsonResponse({ unbound: [] }));
+    await unbindSession(c, { cityName: CITY, sessionId: "mayor-1", conversation: CONV });
+    expect(await calls[0].clone().json()).toEqual({ session_id: "mayor-1", conversation: CONV });
+  });
+
+  it("ensureGroup includes metadata and omits root/mode/handle when only metadata is given", async () => {
+    const { client: c, calls } = client(() => jsonResponse({ ID: "g1" }, { status: 201 }));
+    await ensureGroup(c, { cityName: CITY, metadata: { team: "ops" } });
+    expect(await calls[0].clone().json()).toEqual({ metadata: { team: "ops" } });
+  });
+
+  it("getGroup serializes account_id alone and omits the other keys", async () => {
+    const { client: c, calls } = client(() => jsonResponse({ ID: "g1" }));
+    await getGroup(c, { cityName: CITY, accountId: "default" });
+    const url = new URL(calls[0].url);
+    expect(url.searchParams.get("account_id")).toBe("default");
+    expect(url.searchParams.has("scope_id")).toBe(false);
+    expect(url.searchParams.has("provider")).toBe(false);
+    expect(url.searchParams.has("conversation_id")).toBe(false);
+    expect(url.searchParams.has("kind")).toBe(false);
+  });
+
+  it("upsertParticipant includes metadata and omits public when public is unset", async () => {
+    const { client: c, calls } = client(() => jsonResponse({ ID: "p1", Handle: "@me" }));
+    await upsertParticipant(c, {
+      cityName: CITY,
+      groupId: "g1",
+      handle: "@me",
+      sessionId: "mayor-1",
+      metadata: { role: "lead" },
+    });
+    expect(await calls[0].clone().json()).toEqual({
+      group_id: "g1",
+      handle: "@me",
+      session_id: "mayor-1",
+      metadata: { role: "lead" },
+    });
+  });
+
+  it("postOutbound includes reply_to_message_id and omits conversation/text/idempotency_key", async () => {
+    const { client: c, calls } = client(() => jsonResponse({ Receipt: {}, DeliveryContext: {}, TranscriptEntry: {} }));
+    await postOutbound(c, { cityName: CITY, sessionId: "mayor-1", replyToMessageId: "m9" });
+    expect(await calls[0].clone().json()).toEqual({ session_id: "mayor-1", reply_to_message_id: "m9" });
+  });
+
+  it("postInbound forwards a pre-normalized message and omits the raw-payload fields", async () => {
+    const { client: c, calls } = client(() =>
+      jsonResponse({ Message: {}, Binding: {}, GroupRoute: {}, TranscriptEntry: {}, TargetSessionID: "x" }),
+    );
+    const message = {
+      provider: "cockpit",
+      account_id: "default",
+      conversation: CONV,
+      text: "hi",
+    } as unknown as ExternalInboundMessage;
+    await postInbound(c, { cityName: CITY, message });
+    expect(await calls[0].clone().json()).toEqual({ message });
+  });
+
+  it("getTranscript serializes account_id + parent_conversation_id and omits the rest", async () => {
+    const { client: c, calls } = client(() => jsonResponse({ items: [], total: 0 }));
+    await getTranscript(c, { cityName: CITY, accountId: "default", parentConversationId: "p1" });
+    const url = new URL(calls[0].url);
+    expect(url.searchParams.get("account_id")).toBe("default");
+    expect(url.searchParams.get("parent_conversation_id")).toBe("p1");
+    expect(url.searchParams.has("scope_id")).toBe(false);
+    expect(url.searchParams.has("provider")).toBe(false);
+    expect(url.searchParams.has("conversation_id")).toBe(false);
+    expect(url.searchParams.has("kind")).toBe(false);
+    expect(url.searchParams.has("after_sequence")).toBe(false);
+    expect(url.searchParams.has("limit")).toBe(false);
+    expect(url.searchParams.has("order")).toBe(false);
+  });
+
+  it("ackTranscript omits conversation + sequence when not given", async () => {
+    const { client: c, calls } = client(() => jsonResponse({ status: "ok" }));
+    await ackTranscript(c, { cityName: CITY, sessionId: "mayor-1" });
+    expect(await calls[0].clone().json()).toEqual({ session_id: "mayor-1" });
   });
 });

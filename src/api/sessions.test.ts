@@ -111,3 +111,71 @@ describe("permissionModeOf", () => {
     expect(permissionModeOf(withOptions())).toBeNull();
   });
 });
+
+// Each optional query field is a `cond ? {…} : {}` spread; exercise both the
+// present and absent arm of every one so the serializer is fully covered.
+describe("session reads — optional query arms", () => {
+  it("getSessionTranscript omits all optional query params when absent", async () => {
+    const { client: c, calls } = client(() => jsonResponse({ id: SID, turns: [] }));
+    await getSessionTranscript(c, { cityName: CITY, id: SID });
+    const url = new URL(calls[0].url);
+    expect(url.searchParams.has("format")).toBe(false);
+    expect(url.searchParams.has("tail")).toBe(false);
+    expect(url.searchParams.has("before")).toBe(false);
+    expect(url.searchParams.has("after")).toBe(false);
+  });
+
+  it("getSessionTranscript serializes the before/after pagination cursors", async () => {
+    const { client: c, calls } = client(() => jsonResponse({ id: SID, turns: [] }));
+    await getSessionTranscript(c, {
+      cityName: CITY,
+      id: SID,
+      format: "raw",
+      tail: "5",
+      before: "uuid-before",
+      after: "uuid-after",
+    });
+    const url = new URL(calls[0].url);
+    expect(url.searchParams.get("format")).toBe("raw");
+    expect(url.searchParams.get("tail")).toBe("5");
+    expect(url.searchParams.get("before")).toBe("uuid-before");
+    expect(url.searchParams.get("after")).toBe("uuid-after");
+  });
+
+  it("getSession omits the peek params when absent", async () => {
+    const { client: c, calls } = client(() => jsonResponse({ id: SID }));
+    await getSession(c, { cityName: CITY, id: SID });
+    const url = new URL(calls[0].url);
+    expect(url.searchParams.has("peek")).toBe(false);
+    expect(url.searchParams.has("peek_lines")).toBe(false);
+  });
+
+  it("listSessions serializes every optional filter when present", async () => {
+    const { client: c, calls } = client(() => jsonResponse({ items: [], total: 0 }));
+    await listSessions(c, {
+      cityName: CITY,
+      cursor: "cur",
+      limit: 10,
+      state: "active",
+      template: "mayor",
+      peek: true,
+    });
+    const url = new URL(calls[0].url);
+    expect(url.searchParams.get("cursor")).toBe("cur");
+    expect(url.searchParams.get("limit")).toBe("10");
+    expect(url.searchParams.get("state")).toBe("active");
+    expect(url.searchParams.get("template")).toBe("mayor");
+    expect(url.searchParams.get("peek")).toBe("true");
+  });
+
+  it("listSessions omits every optional filter when absent", async () => {
+    const { client: c, calls } = client(() => jsonResponse({ items: [], total: 0 }));
+    await listSessions(c, { cityName: CITY });
+    const url = new URL(calls[0].url);
+    expect(url.searchParams.has("cursor")).toBe(false);
+    expect(url.searchParams.has("limit")).toBe(false);
+    expect(url.searchParams.has("state")).toBe(false);
+    expect(url.searchParams.has("template")).toBe(false);
+    expect(url.searchParams.has("peek")).toBe(false);
+  });
+});

@@ -134,6 +134,19 @@ describe("summarizeDiff / summaryLine", () => {
       "4 files · +1 ~2 -1",
     );
   });
+
+  it("includes renamed (») and other (?) tallies in the summary line", () => {
+    expect(summaryLine({ total: 3, added: 0, modified: 0, deleted: 0, renamed: 2, other: 1 })).toBe(
+      "3 files · »2 ?1",
+    );
+  });
+
+  it("omits the detail suffix when a non-empty diff has no categorised counts", () => {
+    // Defensive: total > 0 with every bucket at 0 yields just the file count.
+    expect(summaryLine({ total: 2, added: 0, modified: 0, deleted: 0, renamed: 0, other: 0 })).toBe(
+      "2 files",
+    );
+  });
 });
 
 describe("change presentation helpers", () => {
@@ -141,8 +154,12 @@ describe("change presentation helpers", () => {
     expect(changeLabel("added")).toBe("added");
     expect(changeLabel("type-changed")).toBe("type changed");
     expect(changeLabel("unknown")).toBe("changed");
+    expect(changeBadge("added")).toBe("A");
     expect(changeBadge("modified")).toBe("M");
+    expect(changeBadge("deleted")).toBe("D");
     expect(changeBadge("renamed")).toBe("R");
+    expect(changeBadge("copied")).toBe("C");
+    expect(changeBadge("type-changed")).toBe("T");
     expect(changeBadge("unknown")).toBe("?");
   });
 });
