@@ -1,9 +1,24 @@
 {
-  "commands": [
-    {
-      "command": "gascityCockpit.openChat",
-      "title": "GasCity Cockpit: Open Chat (Mayor / agent)",
-      "category": "GasCity Cockpit"
+    "commands": [
+        {
+            "command": "gascityCockpit.openChat",
+            "title": "GasCity Cockpit: Open Chat (Mayor / agent)",
+            "category": "GasCity Cockpit",
+            "icon": "$(comment-discussion)"
+        }
+    ],
+    "menus": {
+        "view/title": [
+            {
+                "command": "gascityCockpit.openChat",
+                "when": "view == gascityCockpit.fleet",
+                "group": "navigation@0"
+            },
+            {
+                "command": "gascityCockpit.openChat",
+                "when": "view == gascityCockpit.beads",
+                "group": "navigation@0"
+            }
+        ]
     }
-  ]
 }
