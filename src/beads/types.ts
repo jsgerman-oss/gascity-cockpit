@@ -66,9 +66,15 @@ export interface BeadFilters {
   priority?: number;
   /** When false, closed beads are hidden unless `status` explicitly lists them. */
   includeClosed: boolean;
+  /**
+   * Unless explicitly `false`, operational machinery (nudge / order / patrol
+   * wisps, agent sessions, mail) is hidden — see `isOperationalBead`. Defaults
+   * to hidden so the explorer shows real work, not Gas Town's plumbing.
+   */
+  hideOperational?: boolean;
 }
 
-export const DEFAULT_FILTERS: BeadFilters = { includeClosed: false };
+export const DEFAULT_FILTERS: BeadFilters = { includeClosed: false, hideOperational: true };
 
 /** Beads for one city plus the partial/error context of fetching them. */
 export interface CityRecords {

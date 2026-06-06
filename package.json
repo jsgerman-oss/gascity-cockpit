@@ -110,6 +110,12 @@
         "icon": "$(eye)"
       },
       {
+        "command": "gascityCockpit.beads.toggleOperational",
+        "title": "Toggle Operational Wisps",
+        "category": "GasCity Beads",
+        "icon": "$(filter-filled)"
+      },
+      {
         "command": "gascityCockpit.beads.filter",
         "title": "Filter Beads…",
         "category": "GasCity Beads",
@@ -301,14 +307,19 @@
           "group": "navigation@2"
         },
         {
-          "command": "gascityCockpit.beads.toggleClosed",
+          "command": "gascityCockpit.beads.toggleOperational",
           "when": "view == gascityCockpit.beads",
           "group": "navigation@3"
         },
         {
-          "command": "gascityCockpit.beads.refresh",
+          "command": "gascityCockpit.beads.toggleClosed",
           "when": "view == gascityCockpit.beads",
           "group": "navigation@4"
+        },
+        {
+          "command": "gascityCockpit.beads.refresh",
+          "when": "view == gascityCockpit.beads",
+          "group": "navigation@5"
         },
         {
           "command": "gascityCockpit.beads.clearFilters",

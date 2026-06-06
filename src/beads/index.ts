@@ -33,6 +33,7 @@ export {
   priorityLabel,
   priorityRank,
 } from "./status.ts";
+export { isOperationalBead } from "./status.ts";
 
 export {
   buildBeadTree,

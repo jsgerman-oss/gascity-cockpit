@@ -7,9 +7,10 @@ import {
   displayStatusLabel,
   displayStatusRank,
   priorityLabel,
+  isOperationalBead,
   priorityRank,
 } from "./status";
-import { makeRecord } from "./fixtures";
+import { makeBead, makeRecord } from "./fixtures";
 
 const NOW = new Date("2026-06-05T00:00:00Z");
 
@@ -102,5 +103,30 @@ describe("beadAssignee / beadType placeholders", () => {
     expect(beadAssignee(makeRecord({ assignee: "x" }).bead)).toBe("x");
     expect(beadType(makeRecord({ issue_type: "" }).bead)).toBe("(untyped)");
     expect(beadType(makeRecord({ issue_type: "bug" }).bead)).toBe("bug");
+  });
+});
+
+describe("isOperationalBead", () => {
+  it("flags wisp-id beads (even when typed as a chore)", () => {
+    expect(isOperationalBead(makeBead({ id: "bh-wisp-77xu4q", issue_type: "chore" }))).toBe(true);
+  });
+
+  it("flags operational issue_types", () => {
+    for (const issue_type of ["message", "molecule", "session", "event"]) {
+      expect(isOperationalBead(makeBead({ id: "bh-x", issue_type }))).toBe(true);
+    }
+  });
+
+  it("flags nudge:/order: titles and gc:nudge/order-run labels", () => {
+    expect(isOperationalBead(makeBead({ id: "bh-x", title: "nudge:nudge-abc" }))).toBe(true);
+    expect(isOperationalBead(makeBead({ id: "bh-x", title: "order:gate-sweep:rig:y" }))).toBe(true);
+    expect(isOperationalBead(makeBead({ id: "bh-x", labels: ["gc:nudge"] }))).toBe(true);
+    expect(isOperationalBead(makeBead({ id: "bh-x", labels: ["order-run", "x"] }))).toBe(true);
+  });
+
+  it("does NOT flag real work, including a genuine chore", () => {
+    expect(isOperationalBead(makeBead({ id: "bh-cpvn", issue_type: "chore", title: "gc-core: doctor --fix" }))).toBe(false);
+    expect(isOperationalBead(makeBead({ id: "cockpit-1ll", issue_type: "epic", title: "Cockpit" }))).toBe(false);
+    expect(isOperationalBead(makeBead({ id: "cockpit-1ll.5", issue_type: "task", title: "Beads explorer" }))).toBe(false);
   });
 });
