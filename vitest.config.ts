@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 // Seam 1 (PRD Testing Decisions): the typed API-client layer is provider-agnostic
@@ -8,6 +9,21 @@ export default defineConfig({
     // adapters) live under targets/ and carry their own tests.
     include: ["src/**/*.test.ts", "targets/**/*.test.ts"],
     environment: "node",
+    // There is no `vscode` runtime in node_modules (only `@types/vscode`), so the
+    // host-abstracted features — which reach `vscode` transitively through their
+    // `src/views/` glue — could not be imported in a Node test. Redirect the bare
+    // `vscode` specifier to the in-memory fake (src/test/fake-vscode.ts) so a
+    // feature's register() runs and is drivable via src/test/fake-host.ts. Exact
+    // match only (`/^vscode$/`) so any `vscode/...` subpath is left untouched. This
+    // is a runtime alias for the test run; tsc still resolves `vscode` to the real
+    // types, and the portability guard (core-portability.test.ts) reads source text
+    // rather than importing, so it is unaffected.
+    alias: [
+      {
+        find: /^vscode$/,
+        replacement: fileURLToPath(new URL("./src/test/fake-vscode.ts", import.meta.url)),
+      },
+    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "text-summary", "html", "lcov"],
