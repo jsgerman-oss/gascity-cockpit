@@ -166,11 +166,16 @@ extraction unblocks the companion.
 
 - **Phase 0 — Feasibility + portability guard.** *This spike.* Audit (above) +
   the enforced `core-portability` guard. **Done.**
-- **Phase 1 — Extract `@cockpit/api` + `@cockpit/core` (enabler).** Move the
-  portable surface into workspace packages the extension *and* a companion both
-  consume; this repo becomes an npm-workspaces monorepo. The extension keeps
-  importing the same symbols; the guard extends to the package boundary. Pure
-  refactor, no behaviour change — like `cockpit-1ll.15`.
+- **Phase 1 — Core boundary + multi-target build (enabler).** Consolidate the
+  portable surface behind one importable boundary the extension *and* sibling
+  targets consume, and add the build wiring so a non-extension target compiles
+  and runs. Landed in-repo as [`src/core` + a multi-target esbuild +
+  stub CLI](./core-boundary.md) (`cockpit-dc8.4`) — pragmatically scoped *short*
+  of the full npm-workspaces extraction below. Promoting `core` to a published
+  `@cockpit/core` workspace package (one version, one CI, shared guard) is the
+  remaining step if/when this repo becomes a monorepo; the import surface is
+  already what such a package would expose. Pure addition, no extension
+  behaviour change — like `cockpit-1ll.15`.
 - **Phase 2 — Web companion MVP (localhost, read-only).** A minimal SPA on the
   shared core: Fleet/event feed (live over SSE), Beads explorer, town-topology
   SVG, merge queue. Reuses the renderers; rebuilds only the shell. Proves the

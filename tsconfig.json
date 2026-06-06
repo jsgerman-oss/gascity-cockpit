@@ -21,6 +21,6 @@
     "declaration": false,
     "noEmit": true
   },
-  "include": ["src", "scripts", "esbuild.mjs", "vitest.config.ts"],
+  "include": ["src", "targets", "scripts", "esbuild.mjs", "vitest.config.ts"],
   "exclude": ["node_modules", "dist", "out", ".vscode-test"]
 }

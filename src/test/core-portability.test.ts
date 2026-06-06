@@ -31,8 +31,10 @@ const srcRoot = resolve(here, "..");
  * barrel file.
  */
 const PORTABLE_ENTRYPOINTS = [
+  "core", // the consolidated boundary a sibling target imports (cockpit-dc8.4)
   "api", // the typed /v0 client + SSE reader — the load-bearing shared layer
   "beads",
+  "telemetry", // re-exported by core; guarded here as first-class portable too
   "status", // status/views.ts (the VS Code adapter) is excluded by this barrel
   "town",
   "mergeQueue",

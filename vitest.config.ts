@@ -4,7 +4,9 @@ import { defineConfig } from "vitest/config";
 // and tested in plain Node — it never imports `vscode`, so no editor runtime is needed.
 export default defineConfig({
   test: {
-    include: ["src/**/*.test.ts"],
+    // Cores live under src/; non-extension build targets (the CLI, future ACP/MCP
+    // adapters) live under targets/ and carry their own tests.
+    include: ["src/**/*.test.ts", "targets/**/*.test.ts"],
     environment: "node",
     coverage: {
       provider: "v8",
@@ -16,6 +18,7 @@ export default defineConfig({
         "src/code/**/*.ts",
         "src/formulas/**/*.ts",
         "src/telemetry/**/*.ts",
+        "targets/**/*.ts",
       ],
       // Generated types and tests are excluded; the thin vscode-bound status
       // glue (views.ts) is intentionally not unit-tested (PRD); bead fixtures

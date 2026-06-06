@@ -10,6 +10,10 @@ coverage/**
 
 src/**
 scripts/**
+# Non-extension build targets (the fleet-status CLI, future ACP/MCP adapters).
+# Only dist/extension.js is the extension; the CLI bundle ships separately.
+targets/**
+dist/targets/**
 openapi/**
 docs/**
 .beads/**
