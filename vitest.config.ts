@@ -10,25 +10,44 @@ export default defineConfig({
     environment: "node",
     coverage: {
       provider: "v8",
-      include: [
-        "src/api/**/*.ts",
-        "src/cities/**/*.ts",
-        "src/status/**/*.ts",
-        "src/beads/**/*.ts",
-        "src/code/**/*.ts",
-        "src/formulas/**/*.ts",
-        "src/telemetry/**/*.ts",
-        "targets/**/*.ts",
-      ],
-      // Generated types and tests are excluded; the thin vscode-bound status
-      // glue (views.ts) is intentionally not unit-tested (PRD); bead fixtures
-      // are data-only and carry no logic worth covering.
+      reporter: ["text", "text-summary", "html", "lcov"],
+      // Count every accessible source file, even those no test imports yet, so
+      // the report shows the true surface (uncovered files appear at 0%).
+      all: true,
+      include: ["src/**/*.ts", "targets/**/*.ts"],
+      // Two kinds of exclusion only:
+      //  (1) nothing to cover — generated client, tests, type-only decls,
+      //      barrels (re-exports), and data fixtures/test helpers.
+      //  (2) genuinely editor-bound — files that import `vscode` and so need a
+      //      real VS Code runtime (tree/webview providers, the panels, the host
+      //      impl, the activation entry, and the 5 features that call vscode
+      //      directly). Everything host-abstracted stays IN: the api/domain
+      //      cores, the chat conversation-store/protocol/html, and the 12
+      //      features that depend on the `host` interface, not `vscode`.
       exclude: [
         "src/api/generated/**",
         "src/**/*.test.ts",
+        "src/**/types.ts",
+        "src/**/index.ts",
+        "src/**/fixtures.ts",
+        "src/test/**",
+        "src/extension.ts",
+        "src/views/**",
+        "src/host/host.ts",
         "src/status/views.ts",
-        "src/beads/fixtures.ts",
+        "src/chat/chat-panel.ts",
+        "src/chat/open-chat.ts",
+        "src/dashboard/panel.ts",
+        "src/features/chat.feature.ts",
+        "src/features/chatParticipant.feature.ts",
+        "src/features/dashboard.feature.ts",
+        "src/features/extmsg.feature.ts",
+        "src/features/notifications.feature.ts",
       ],
+      // Target gate (≥95 everywhere testable). NOT yet wired into `npm run
+      // check` — flip on after the fill phase brings cores to green, so
+      // in-flight PRs aren't blocked meanwhile.
+      thresholds: { lines: 95, branches: 90, functions: 95, statements: 95 },
     },
   },
 });
