@@ -229,8 +229,9 @@ The pack verifies the supervisor's `/v0` API and publishes the discovery descrip
 ```bash
 # from this repo; --city points at your gas city's root
 pack/install.sh --town --city /path/to/your-city
-# publish the descriptor the extension discovers
-/path/to/your-city/packs/cockpit/bin/cockpit discover --write
+# publish the descriptor the extension reads (run from this repo —
+# install.sh imports the pack in place, it does not copy it into the city)
+pack/bin/cockpit discover --write
 ```
 
 Use `--rig <name>` to scope it to a single rig instead of `--town`. See [pack/docs/DESIGN.md](pack/docs/DESIGN.md) for the discovery handshake.
