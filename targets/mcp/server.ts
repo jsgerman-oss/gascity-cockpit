@@ -144,6 +144,7 @@ export async function serve(dispatcher: Dispatcher, streams: ServeStreams): Prom
 export async function run(
   argv: readonly string[],
   env: Readonly<Record<string, string | undefined>> = {},
+  streams: ServeStreams = { input: process.stdin, output: process.stdout },
 ): Promise<number> {
   const parsed = parseArgs(argv, env);
   if (parsed.kind === "help") {
@@ -168,6 +169,6 @@ export async function run(
       `(writes ${parsed.options.allowWrites ? "ENABLED" : "disabled"}, ${TOOLS.length} tools)`,
   );
 
-  await serve(dispatcher, { input: process.stdin, output: process.stdout });
+  await serve(dispatcher, streams);
   return 0;
 }

@@ -3,6 +3,7 @@ import {
   JsonRpcPeer,
   LineBuffer,
   RpcError,
+  RPC_INVALID_REQUEST,
   RPC_METHOD_NOT_FOUND,
   RPC_PARSE_ERROR,
   contentBlocksToText,
@@ -123,5 +124,39 @@ describe("JsonRpcPeer", () => {
     const peer = new JsonRpcPeer({ send: () => {}, onRequest: async () => null });
     // Should not throw — just a no-op.
     await peer.receive(JSON.stringify({ jsonrpc: "2.0", id: 999, result: {} }));
+  });
+
+  it("ignores a response whose id is null", async () => {
+    const peer = new JsonRpcPeer({ send: () => {}, onRequest: async () => null });
+    // A null-id response can't correlate to any pending request — dropped in settle().
+    await peer.receive(JSON.stringify({ jsonrpc: "2.0", id: null, result: {} }));
+  });
+
+  it("routes a notification-handler throw to onError", async () => {
+    const errors: unknown[] = [];
+    const peer = new JsonRpcPeer({
+      send: () => {},
+      onRequest: async () => null,
+      onNotification: () => {
+        throw new Error("note boom");
+      },
+      onError: (err) => errors.push(err),
+    });
+    await peer.receive(JSON.stringify({ jsonrpc: "2.0", method: "session/cancel", params: {} }));
+    expect((errors[0] as Error).message).toBe("note boom");
+  });
+
+  it("answers a non-object message with an invalid-request error", async () => {
+    const sent: string[] = [];
+    const peer = new JsonRpcPeer({ send: (m) => sent.push(m), onRequest: async () => null });
+    await peer.receive("42"); // valid JSON, but not an object
+    expect(JSON.parse(sent[0])).toMatchObject({ id: null, error: { code: RPC_INVALID_REQUEST } });
+  });
+
+  it("answers a message with no method with an invalid-request error", async () => {
+    const sent: string[] = [];
+    const peer = new JsonRpcPeer({ send: (m) => sent.push(m), onRequest: async () => null });
+    await peer.receive(JSON.stringify({ jsonrpc: "2.0", id: 5 })); // neither a response nor a request
+    expect(JSON.parse(sent[0])).toMatchObject({ id: null, error: { code: RPC_INVALID_REQUEST } });
   });
 });

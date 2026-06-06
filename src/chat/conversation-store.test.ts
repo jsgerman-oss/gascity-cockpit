@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createCockpitClient } from "../api/client";
-import type { SessionStreamEvent } from "../api/index.ts";
+import type { SessionStreamEvent, SubmitOutcome } from "../api/index.ts";
 import { jsonResponse, mockFetch, problemResponse } from "../test/helpers";
 import { ConversationStore, type ConversationStoreDeps } from "./conversation-store.ts";
 
@@ -215,5 +215,156 @@ describe("ConversationStore.dispose", () => {
     stream.push({ kind: "activity", activity: "idle" });
     await tick();
     expect(changes).toBe(before); // no further emissions
+  });
+
+  it("aborts outstanding outcome correlations on dispose and is idempotent", async () => {
+    const { store } = makeStore(
+      () => jsonResponse({ request_id: "r1", event_cursor: "1", status: "accepted" }, { status: 202 }),
+      { awaitSubmitOutcome: () => new Promise<SubmitOutcome>(() => {}) }, // never settles
+    );
+    await store.submit("go"); // registers an outcome controller
+    store.dispose(); // aborts and clears it
+    store.dispose(); // second call returns early — no double-teardown
+    expect(store.state.connection).toBe("idle");
+  });
+});
+
+describe("ConversationStore.load — partial and total failure", () => {
+  it("marks the connection errored when both session and transcript fail", async () => {
+    const { store } = makeStore((path) => {
+      if (path.endsWith("/transcript")) return problemResponse({ type: "urn:test:down", title: "Transcript", status: 503, detail: "stream down" }, { status: 503 });
+      if (path.endsWith("/pending")) return jsonResponse({ supported: false });
+      return problemResponse({ type: "urn:test:down", title: "Session", status: 503 }, { status: 503 });
+    });
+    await store.load();
+    expect(store.state.connection).toBe("error");
+    expect(store.state.lastError).toBe("stream down");
+  });
+
+  it("tolerates a failing pending probe and still renders", async () => {
+    const { store } = makeStore((path) => {
+      if (path.endsWith("/transcript")) return jsonResponse({ format: "conversation", id: SID, turns: [] });
+      if (path.endsWith("/pending")) return problemResponse({ type: "urn:test:no-pending", title: "no pending", status: 500 }, { status: 500 });
+      return jsonResponse({ id: SID, title: "Mayor" });
+    });
+    await store.load();
+    expect(store.state.pending).toBeNull();
+    expect(store.state.connection).toBe("idle");
+  });
+});
+
+describe("ConversationStore stream — activity and ignored events", () => {
+  it("normalizes idle / unknown activity and ignores heartbeats", async () => {
+    const stream = controllableStream();
+    const { store } = makeStore(() => jsonResponse({}), { streamSession: () => stream.gen() });
+    store.connect();
+
+    stream.push({ kind: "activity", activity: "idle" });
+    await tick();
+    expect(store.state.activity).toBe("idle");
+
+    stream.push({ kind: "activity", activity: "weird" as never });
+    await tick();
+    expect(store.state.activity).toBe("unknown");
+
+    stream.push({ kind: "heartbeat" } as never); // an ignored event kind
+    await tick();
+    expect(store.state.activity).toBe("unknown"); // unchanged
+
+    stream.close();
+    await tick();
+  });
+
+  it("stops applying events once the stream is disconnected", async () => {
+    const stream = controllableStream();
+    const { store } = makeStore(() => jsonResponse({}), { streamSession: () => stream.gen() });
+    store.connect();
+    stream.push({ kind: "activity", activity: "in-turn" });
+    await tick();
+
+    store.disconnect(); // aborts the stream signal
+    stream.push({ kind: "turn", turns: [{ role: "assistant", text: "late" }], event: {} as never });
+    await tick();
+    expect(store.state.turns).toEqual([]); // the post-abort event is dropped
+  });
+});
+
+describe("ConversationStore.sendMessage", () => {
+  it("posts the message and toggles the sending flag", async () => {
+    const { store } = makeStore(() => jsonResponse({ request_id: "r1", event_cursor: "0", status: "accepted" }, { status: 202 }));
+    const res = await store.sendMessage("ping");
+    expect(res.ok).toBe(true);
+    expect(store.state.sending).toBe(false);
+  });
+
+  it("records an error when the send fails", async () => {
+    const { store } = makeStore(() => problemResponse({ type: "urn:test:busy", title: "Busy", status: 409, detail: "later" }, { status: 409 }));
+    const res = await store.sendMessage("ping");
+    expect(res.ok).toBe(false);
+    expect(store.state.lastError).toBe("later");
+  });
+});
+
+describe("ConversationStore.respond — variants", () => {
+  it("responds with no pending request id and forwards metadata", async () => {
+    const { store, calls } = makeStore(() => jsonResponse({ id: SID, status: "accepted" }, { status: 202 }));
+    const res = await store.respond("allow", { metadata: { reason: "ok" } });
+    expect(res.ok).toBe(true);
+    expect(await calls[0].clone().json()).toEqual({ action: "allow", metadata: { reason: "ok" } });
+    expect(store.state.pending).toBeNull();
+  });
+
+  it("records an error when respond fails", async () => {
+    const { store } = makeStore(() => problemResponse({ type: "urn:test:gone", title: "Gone", status: 410, detail: "expired" }, { status: 410 }));
+    const res = await store.respond("allow");
+    expect(res.ok).toBe(false);
+    expect(store.state.lastError).toBe("expired");
+  });
+});
+
+describe("ConversationStore.setPermissionMode — variants", () => {
+  it("falls back to the requested mode when the server omits one", async () => {
+    const { store } = makeStore(() => jsonResponse({ id: SID })); // no options.permission_mode
+    const res = await store.setPermissionMode("acceptEdits");
+    expect(res.ok).toBe(true);
+    expect(store.state.permissionMode).toBe("acceptEdits");
+  });
+
+  it("records an error when the mode change fails", async () => {
+    const { store } = makeStore(() => problemResponse({ type: "urn:test:bad-mode", title: "No", status: 400, detail: "bad mode" }, { status: 400 }));
+    const res = await store.setPermissionMode("plan");
+    expect(res.ok).toBe(false);
+    expect(store.state.lastError).toBe("bad mode");
+  });
+});
+
+describe("ConversationStore.submit — outcome correlation", () => {
+  it("leaves lastError clear when the correlated outcome succeeds (no event cursor)", async () => {
+    const { store } = makeStore(
+      () => jsonResponse({ request_id: "r1", status: "accepted" }, { status: 202 }), // no event_cursor
+      { awaitSubmitOutcome: async () => ({ kind: "succeeded", type: "request.result.session.submit" }) },
+    );
+    await store.submit("go");
+    await tick();
+    expect(store.state.lastError).toBeNull();
+  });
+});
+
+describe("ConversationStore — default seams + start()", () => {
+  it("uses the real stream/outcome defaults when those seams are omitted", () => {
+    const { fetch } = mockFetch(() => jsonResponse({}));
+    const client = createCockpitClient({ baseUrl: ENDPOINT.baseUrl, fetch });
+    const store = new ConversationStore({ client, endpoint: ENDPOINT, cityName: CITY, sessionId: SID });
+    expect(store.state.connection).toBe("idle");
+    store.dispose();
+  });
+
+  it("start() loads a snapshot then opens the live stream", async () => {
+    const stream = controllableStream();
+    const { store } = makeStore(() => jsonResponse({ id: SID, title: "Mayor" }), { streamSession: () => stream.gen() });
+    await store.start();
+    expect(store.state.connection).toBe("streaming");
+    stream.close();
+    await tick();
   });
 });

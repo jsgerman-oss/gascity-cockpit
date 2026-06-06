@@ -31,15 +31,23 @@ export default defineConfig({
       // the report shows the true surface (uncovered files appear at 0%).
       all: true,
       include: ["src/**/*.ts", "targets/**/*.ts"],
-      // Two kinds of exclusion only:
+      // Three kinds of exclusion only:
       //  (1) nothing to cover — generated client, tests, type-only decls,
       //      barrels (re-exports), and data fixtures/test helpers.
       //  (2) genuinely editor-bound — files that import `vscode` and so need a
       //      real VS Code runtime (tree/webview providers, the panels, the host
-      //      impl, the activation entry, and the 5 features that call vscode
-      //      directly). Everything host-abstracted stays IN: the api/domain
-      //      cores, the chat conversation-store/protocol/html, and the 12
+      //      impl, the activation entry, and the features that call vscode
+      //      directly, including the docked chat view + its feature wiring).
+      //      Everything host-abstracted stays IN: the api/domain cores, the chat
+      //      conversation-store/protocol/html/participant-bridge/pickers, and the
       //      features that depend on the `host` interface, not `vscode`.
+      //  (3) build-target entry shells — `targets/<t>/main.ts` run their side
+      //      effects at import (an stdio JSON-RPC server bound to process.stdin,
+      //      or a browser DOM bootstrap), so they can't be imported under Node
+      //      without spawning a server / needing a `window`. Their logic lives in
+      //      the host-abstracted cores they invoke (acp-mayor.ts `run`,
+      //      server.ts `run`, app.ts `createWebApp`), which ARE tested — same
+      //      rationale as excluding `src/extension.ts`.
       exclude: [
         "src/api/generated/**",
         "src/**/*.test.ts",
@@ -52,13 +60,18 @@ export default defineConfig({
         "src/host/host.ts",
         "src/status/views.ts",
         "src/chat/chat-panel.ts",
+        "src/chat/chat-view.ts",
         "src/chat/open-chat.ts",
         "src/dashboard/panel.ts",
         "src/features/chat.feature.ts",
         "src/features/chatParticipant.feature.ts",
+        "src/features/chatView.feature.ts",
         "src/features/dashboard.feature.ts",
         "src/features/extmsg.feature.ts",
         "src/features/notifications.feature.ts",
+        "targets/acp/main.ts",
+        "targets/mcp/main.ts",
+        "targets/web/main.ts",
       ],
       // Target gate (≥95 everywhere testable). NOT yet wired into `npm run
       // check` — flip on after the fill phase brings cores to green, so

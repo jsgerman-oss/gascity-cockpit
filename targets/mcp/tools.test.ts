@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 import * as core from "../../src/core/index.ts";
 import { mockFetch, jsonResponse, problemResponse } from "../../src/test/helpers.ts";
-import { makeBead } from "../../src/beads/fixtures.ts";
+import { makeBead, makeRecord } from "../../src/beads/fixtures.ts";
 import { TOOLS, findTool, type ToolContext, type ToolResult } from "./tools.ts";
 
 const FIXED_NOW = new Date("2026-06-06T12:00:00Z");
@@ -38,6 +38,17 @@ function call(name: string, ctx: ToolContext, args: Record<string, unknown> = {}
 /** Narrow a tool's `data` to a record for property assertions. */
 function data(result: ToolResult): Record<string, unknown> {
   return result.data as Record<string, unknown>;
+}
+
+/** A tool context with a hand-stubbed bead repository (for throw / partial paths). */
+function ctxWithRepo(loadExplorer: () => Promise<core.beads.ExplorerData>, allowWrites = false): ToolContext {
+  return {
+    endpoint: "http://stub",
+    client: {} as core.api.CockpitClient,
+    repo: { loadExplorer } as unknown as core.beads.BeadsRepository,
+    allowWrites,
+    now: () => FIXED_NOW,
+  };
 }
 
 describe("registry — every tool advertises a valid MCP schema", () => {
@@ -131,6 +142,19 @@ describe("fleet_status", () => {
     expect(result.isError).toBe(true);
     expect(data(result).error).toBeDefined();
   });
+
+  it("records an agents-fetch error inline for a running city", async () => {
+    const { ctx } = contextFor((req) => {
+      const p = pathOf(req);
+      if (p === "/v0/cities") return jsonResponse({ items: [{ name: "hq", path: "/a", running: true, status: "running" }] });
+      if (p === "/v0/city/hq/agents") return problemResponse({ type: "urn:x", title: "agents down", status: 500 }, { status: 500 });
+      return problemResponse({ title: "not found" }, { status: 404 });
+    });
+    const result = await call("fleet_status", ctx);
+    const city = (data(result).cities as Array<Record<string, unknown>>)[0];
+    expect(city.error).toBe("agents down");
+    expect(city.agents).toEqual([]);
+  });
 });
 
 describe("query_beads", () => {
@@ -190,6 +214,62 @@ describe("query_beads", () => {
     // 'b' (and 'a' has an assignee) — only unassigned open beads match.
     expect((data(result).beads as Array<{ id: string }>).map((b) => b.id)).toEqual(["b"]);
   });
+
+  it("accepts the structured rig / type / text / priority filters, a limit, and a city scope", async () => {
+    const { ctx } = contextFor(handler);
+    const result = await call("query_beads", ctx, {
+      rig: "somerig",
+      type: "feature",
+      text: "ship",
+      priority: 2,
+      limit: 5,
+      city: "hq",
+      includeOperational: true,
+    });
+    expect(result.isError).toBeFalsy();
+  });
+
+  it("echoes unmatched tokens from a natural-language query", async () => {
+    const { ctx } = contextFor(handler);
+    const result = await call("query_beads", ctx, { query: "zzzqqq" });
+    expect(data(result).unmatched).toContain("zzzqqq");
+  });
+
+  it("truncates to the row ceiling and reports it", async () => {
+    const many = Array.from({ length: 201 }, (_, i) => makeBead({ id: `b${i}`, status: "open", title: `t${i}` }));
+    const { ctx } = contextFor((req) => {
+      const p = pathOf(req);
+      if (p === "/v0/cities") return jsonResponse({ items: [{ name: "hq", path: "/a", running: true }] });
+      if (p === "/v0/city/hq/beads") return jsonResponse({ items: many });
+      if (p === "/v0/city/hq/beads/ready") return jsonResponse({ items: [] });
+      return problemResponse({ title: "not found" }, { status: 404 });
+    });
+    const result = await call("query_beads", ctx, { includeClosed: true });
+    expect(data(result).count).toBe(201);
+    expect(data(result).truncated).toBe(true);
+    expect(data(result).returned).toBe(200);
+  });
+
+  it("reports a repository failure as a tool error", async () => {
+    const ctx = ctxWithRepo(async () => {
+      throw new Error("repo down");
+    });
+    const result = await call("query_beads", ctx);
+    expect(result.isError).toBe(true);
+    expect(data(result).error).toBe("repo down");
+  });
+
+  it("flags partial results when a city in the fan-out errors", async () => {
+    const ctx = ctxWithRepo(async () => ({
+      cities: [
+        { city: "hq", running: true, partial: false, records: [makeRecord({ id: "ok-1", title: "T", status: "open" }, true, "hq")] },
+        { city: "bad", running: true, partial: false, records: [], error: "fan-out failed" },
+      ],
+    }));
+    const result = await call("query_beads", ctx);
+    expect(data(result).partial).toBe(true);
+    expect((data(result).errors as Array<{ city: string }>).map((e) => e.city)).toEqual(["bad"]);
+  });
 });
 
 describe("merge_queue", () => {
@@ -224,6 +304,33 @@ describe("merge_queue", () => {
     await call("merge_queue", ctx);
     const beadsCall = calls.find((c) => pathOf(c) === "/v0/city/hq/beads");
     expect(new URL(beadsCall!.url).searchParams.get("all")).toBe("true");
+  });
+
+  it("scopes to a single city", async () => {
+    const { ctx } = contextFor(handler);
+    const result = await call("merge_queue", ctx, { city: "hq" });
+    expect(result.isError).toBeFalsy();
+  });
+
+  it("reports a repository failure as a tool error", async () => {
+    const ctx = ctxWithRepo(async () => {
+      throw new Error("repo offline");
+    });
+    const result = await call("merge_queue", ctx);
+    expect(result.isError).toBe(true);
+    expect(data(result).error).toBe("repo offline");
+  });
+
+  it("flags partial results when a city in the fan-out errors", async () => {
+    const ctx = ctxWithRepo(async () => ({
+      cities: [
+        { city: "hq", running: true, partial: false, records: [] },
+        { city: "bad", running: true, partial: false, records: [], error: "fan-out failed" },
+      ],
+    }));
+    const result = await call("merge_queue", ctx);
+    expect(data(result).partial).toBe(true);
+    expect((data(result).errors as Array<{ city: string }>).map((e) => e.city)).toEqual(["bad"]);
   });
 });
 
@@ -280,6 +387,47 @@ describe("telemetry", () => {
     const result = await call("telemetry", ctx, { city: "nope" });
     expect(result.isError).toBe(true);
   });
+
+  it("scopes telemetry to a single running city", async () => {
+    const { ctx } = contextFor(handler);
+    const result = await call("telemetry", ctx, { city: "hq" });
+    expect((data(result).cities as unknown[]).length).toBe(1);
+  });
+
+  it("drops the cost advisory note once any cost is measured", async () => {
+    const measured = [
+      {
+        type: "worker.operation",
+        seq: 1,
+        ts: "2026-06-06T11:00:00Z",
+        city: "hq",
+        actor: "mayor",
+        payload: { agent_name: "mayor", model: "opus", provider: "claude", operation: "session.submit", result: "ok", duration_ms: 100, cost_usd_estimate: 0.02, prompt_tokens: 10 },
+      },
+    ];
+    const { ctx } = contextFor((req) => {
+      const p = pathOf(req);
+      if (p === "/v0/cities") return jsonResponse({ items: [{ name: "hq", path: "/a", running: true }] });
+      if (p === "/v0/city/hq/events") return jsonResponse({ items: measured, total: 1 });
+      return problemResponse({ title: "not found" }, { status: 404 });
+    });
+    const result = await call("telemetry", ctx);
+    expect(data(result).anyCostMeasured).toBe(true);
+    expect(data(result).note).toBeUndefined();
+  });
+
+  it("flags partial telemetry when a running city's events feed fails", async () => {
+    const { ctx } = contextFor((req) => {
+      const p = pathOf(req);
+      if (p === "/v0/cities") return jsonResponse({ items: [{ name: "hq", path: "/a", running: true }, { name: "bad", path: "/b", running: true }] });
+      if (p === "/v0/city/hq/events") return jsonResponse({ items: [], total: 0 });
+      if (p === "/v0/city/bad/events") return problemResponse({ title: "events down", status: 500 }, { status: 500 });
+      return problemResponse({ title: "not found" }, { status: 404 });
+    });
+    const result = await call("telemetry", ctx);
+    expect(data(result).partial).toBe(true);
+    expect((data(result).errors as Array<{ city: string }>).map((e) => e.city)).toContain("bad");
+  });
 });
 
 describe("recent_events", () => {
@@ -321,6 +469,25 @@ describe("recent_events", () => {
     expect((data(result).events as unknown[]).length).toBe(1);
     expect(data(result).truncated).toBe(true);
   });
+
+  it("surfaces a city-list failure as a tool error when fanning out", async () => {
+    const { ctx } = contextFor(() => problemResponse({ title: "supervisor down", status: 503 }, { status: 503 }));
+    const result = await call("recent_events", ctx); // no city → must list cities first
+    expect(result.isError).toBe(true);
+  });
+
+  it("flags partial results when one city's events fetch fails", async () => {
+    const { ctx } = contextFor((req) => {
+      const p = pathOf(req);
+      if (p === "/v0/cities") return jsonResponse({ items: [{ name: "hq", path: "/a", running: true }, { name: "bad", path: "/b", running: true }] });
+      if (p === "/v0/city/hq/events") return jsonResponse({ items: [{ type: "x", seq: 1, ts: "2026-06-06T11:00:00Z" }], total: 1 });
+      if (p === "/v0/city/bad/events") return problemResponse({ title: "boom", status: 500 }, { status: 500 });
+      return problemResponse({ title: "not found" }, { status: 404 });
+    });
+    const result = await call("recent_events", ctx);
+    expect(data(result).partial).toBe(true);
+    expect((data(result).errors as Array<{ city: string }>).map((e) => e.city)).toContain("bad");
+  });
 });
 
 describe("sling_bead — the guarded write", () => {
@@ -353,5 +520,165 @@ describe("sling_bead — the guarded write", () => {
     const result = await call("sling_bead", ctx, { city: "hq" } as Record<string, unknown>);
     expect(result.isError).toBe(true);
     expect(data(result).error).toContain("target");
+  });
+
+  it("validates that city is required", async () => {
+    const { ctx } = contextFor(handler, true);
+    const result = await call("sling_bead", ctx, { target: "hq/x" } as Record<string, unknown>);
+    expect(result.isError).toBe(true);
+    expect(data(result).error).toContain("city");
+  });
+
+  it("forwards formula / rig / title / vars and surfaces a sling failure with a request id", async () => {
+    const { ctx, calls } = contextFor(
+      () =>
+        problemResponse(
+          { type: "urn:x", title: "sling failed", status: 409, detail: "cross-rig" },
+          { status: 409, headers: { "X-GC-Request-Id": "req-77" } },
+        ),
+      true,
+    );
+    const result = await call("sling_bead", ctx, {
+      city: "hq",
+      target: "hq/gastown.polecat",
+      formula: "mol-x",
+      rig: "rg",
+      title: "Launch",
+      vars: { a: "1", b: 2 }, // non-string values are dropped by readStringRecord
+    });
+    expect(result.isError).toBe(true);
+    expect(data(result).error).toBe("sling failed");
+    expect(data(result).requestId).toBe("req-77"); // errorData surfaces the request id
+    const slingCall = calls.find((c) => pathOf(c) === "/v0/city/hq/sling");
+    expect(slingCall?.method).toBe("POST");
+  });
+
+  it("drops a vars map whose values are all non-strings", async () => {
+    const { ctx, calls } = contextFor(() => jsonResponse({ target: "hq/x", mode: "route" }), true);
+    const result = await call("sling_bead", ctx, { city: "hq", target: "hq/x", vars: { x: 1, y: true } });
+    expect(result.isError).toBeFalsy();
+    const slingCall = calls.find((c) => pathOf(c) === "/v0/city/hq/sling");
+    expect(await slingCall!.clone().json()).not.toHaveProperty("vars"); // empty record → omitted
+  });
+});
+
+// --- defensive nullish / edge-shape branches --------------------------------
+// The handlers guard against the supervisor omitting `items` arrays or fields,
+// non-Error repository throws, and a missing clock. These drive those paths.
+
+describe("tool handlers — defensive branches", () => {
+  it("fleet_status tolerates a cities response with no items array", async () => {
+    const { ctx } = contextFor((req) =>
+      pathOf(req) === "/v0/cities" ? jsonResponse({}) : problemResponse({ title: "nf" }, { status: 404 }),
+    );
+    const result = await call("fleet_status", ctx);
+    expect(data(result).cities).toEqual([]);
+  });
+
+  it("fleet_status tolerates an agents response with no items array", async () => {
+    const { ctx } = contextFor((req) => {
+      const p = pathOf(req);
+      if (p === "/v0/cities") return jsonResponse({ items: [{ name: "hq", path: "/a", running: true }] });
+      if (p === "/v0/city/hq/agents") return jsonResponse({}); // no items
+      return problemResponse({ title: "nf" }, { status: 404 });
+    });
+    const result = await call("fleet_status", ctx);
+    expect(((data(result).cities as Array<Record<string, unknown>>)[0]).agents).toEqual([]);
+  });
+
+  it("query_beads renders sparse beads and defaults the clock when none is injected", async () => {
+    const ctx: ToolContext = {
+      endpoint: "http://stub",
+      client: {} as core.api.CockpitClient,
+      // A record missing title / status / priority, and a context with no `now`.
+      repo: {
+        loadExplorer: async () => ({
+          cities: [{ city: "hq", running: true, partial: false, records: [{ city: "hq", ready: true, bead: { id: "bare", created_at: "x" } as core.beads.Bead }] }],
+        }),
+      } as unknown as core.beads.BeadsRepository,
+      allowWrites: false,
+    };
+    const result = await call("query_beads", ctx, { includeOperational: true });
+    const row = (data(result).beads as Array<Record<string, unknown>>).find((b) => b.id === "bare");
+    expect(row).toBeDefined();
+    expect(row!.title).toBe("");
+    expect(row!.rawStatus).toBe("");
+    expect(row!.priority).toBeNull();
+  });
+
+  it("query_beads stringifies a non-Error repository throw", async () => {
+    const ctx = ctxWithRepo(async () => {
+      throw "raw string failure";
+    });
+    const result = await call("query_beads", ctx);
+    expect(data(result).error).toBe("raw string failure");
+  });
+
+  it("merge_queue stringifies a non-Error repository throw", async () => {
+    const ctx = ctxWithRepo(async () => {
+      throw "raw merge failure";
+    });
+    const result = await call("merge_queue", ctx);
+    expect(data(result).error).toBe("raw merge failure");
+  });
+
+  it("telemetry surfaces a city-list failure", async () => {
+    const { ctx } = contextFor(() => problemResponse({ title: "down", status: 503 }, { status: 503 }));
+    const result = await call("telemetry", ctx);
+    expect(result.isError).toBe(true);
+  });
+
+  it("telemetry tolerates a cities response with no items array", async () => {
+    const { ctx } = contextFor((req) =>
+      pathOf(req) === "/v0/cities" ? jsonResponse({}) : problemResponse({ title: "nf" }, { status: 404 }),
+    );
+    const result = await call("telemetry", ctx);
+    expect(data(result).cities).toEqual([]);
+  });
+
+  it("telemetry tolerates an events feed with no items and malformed envelopes", async () => {
+    const { ctx } = contextFor((req) => {
+      const p = pathOf(req);
+      if (p === "/v0/cities") return jsonResponse({ items: [{ name: "hq", path: "/a", running: true }] });
+      // An envelope with neither a string type nor a numeric seq — adapted then filtered out.
+      if (p === "/v0/city/hq/events") return jsonResponse({ items: [{ foo: "bar" }] });
+      return problemResponse({ title: "nf" }, { status: 404 });
+    });
+    const result = await call("telemetry", ctx);
+    const city = (data(result).cities as Array<Record<string, unknown>>)[0];
+    expect((city.totals as { operations: number }).operations).toBe(0);
+  });
+
+  it("recent_events tolerates missing items and sparse event fields", async () => {
+    const { ctx } = contextFor((req) => {
+      const p = pathOf(req);
+      if (p === "/v0/cities") return jsonResponse({ items: [{ name: "hq", path: "/a", running: true }] });
+      // Two events: one well-formed, one entirely empty (null seq/ts/type, no ts for the sort).
+      if (p === "/v0/city/hq/events") return jsonResponse({ items: [{ type: "a", seq: 1, ts: "2026-06-06T11:00:00Z" }, {}] });
+      return problemResponse({ title: "nf" }, { status: 404 });
+    });
+    const result = await call("recent_events", ctx);
+    const rows = data(result).events as Array<Record<string, unknown>>;
+    const sparse = rows.find((r) => r.seq === null);
+    expect(sparse).toMatchObject({ seq: null, ts: null, type: null });
+  });
+
+  it("recent_events tolerates a city events feed with no items array", async () => {
+    const { ctx } = contextFor((req) => {
+      const p = pathOf(req);
+      if (p === "/v0/cities") return jsonResponse({ items: [{ name: "hq", path: "/a", running: true }] });
+      if (p === "/v0/city/hq/events") return jsonResponse({}); // no items
+      return problemResponse({ title: "nf" }, { status: 404 });
+    });
+    const result = await call("recent_events", ctx);
+    expect(data(result).count).toBe(0);
+  });
+
+  it("recent_events tolerates a cities response with no items array (fan-out path)", async () => {
+    const { ctx } = contextFor((req) =>
+      pathOf(req) === "/v0/cities" ? jsonResponse({}) : problemResponse({ title: "nf" }, { status: 404 }),
+    );
+    const result = await call("recent_events", ctx);
+    expect(data(result).count).toBe(0);
   });
 });

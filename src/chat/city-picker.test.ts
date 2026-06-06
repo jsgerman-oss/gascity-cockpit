@@ -68,4 +68,8 @@ describe("cityPickLabel", () => {
   it("surfaces an errored city", () => {
     expect(cityPickLabel(city({ error: "unreachable" })).description).toBe("error: unreachable");
   });
+
+  it("falls back to an empty detail when the city has no path", () => {
+    expect(cityPickLabel(city({ path: undefined })).detail).toBe("");
+  });
 });

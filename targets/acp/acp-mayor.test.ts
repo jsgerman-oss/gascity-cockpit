@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import * as core from "../../src/core/index.ts";
-import { parseArgs } from "./acp-mayor.ts";
+import { parseArgs, run, serve, type AcpMayorOptions, type ServerIO } from "./acp-mayor.ts";
 import { MayorAgent, type AcpClient } from "./bridge.ts";
 import {
   JsonRpcPeer,
@@ -75,6 +75,112 @@ describe("parseArgs", () => {
 
   it("returns help for --help", () => {
     expect(parseArgs(["--help"], {})).toEqual({ kind: "help" });
+  });
+
+  it("reads the --endpoint= flag form", () => {
+    const parsed = parseArgs(["--endpoint=http://flag:1"], {});
+    expect(parsed.kind === "run" && parsed.options.endpoint).toBe("http://flag:1");
+  });
+
+  it("rejects a second positional argument", () => {
+    expect(parseArgs(["http://a", "extra"], {})).toEqual({ kind: "error", message: "unexpected argument: extra" });
+  });
+});
+
+// --- serve() / run() over in-memory streams ---------------------------------
+// serve/run inject ServerIO, so a full stdio round-trip drives in plain Node.
+// `initialize` is answered by the bridge with no network, so these need no /v0.
+
+const OPTIONS: AcpMayorOptions = {
+  endpoint: "http://stub",
+  timeoutMs: 1000,
+  config: { mayorSession: "mayor", cityName: "hq" },
+};
+
+/** In-memory ServerIO: feed `lines` as input, capture output/log writes. */
+function memoryIO(lines: string[]): { io: ServerIO; out: string[]; log: string[] } {
+  const out: string[] = [];
+  const log: string[] = [];
+  return {
+    io: {
+      input: (async function* () {
+        for (const line of lines) yield line;
+      })(),
+      output: { write: (chunk) => out.push(chunk) },
+      log: { write: (chunk) => log.push(chunk) },
+    },
+    out,
+    log,
+  };
+}
+
+describe("serve", () => {
+  it("answers an initialize request and resolves when the input closes", async () => {
+    const init = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: 1 } });
+    const { io, out, log } = memoryIO([`${init}\n`]);
+    await serve(OPTIONS, io);
+    const responses = out.map((line) => JSON.parse(line) as { id: number; result?: { protocolVersion: number } });
+    expect(responses[0].result?.protocolVersion).toBe(1);
+    expect(log.join("")).toContain("serving Mayor session 'mayor'"); // startup diagnostic to stderr
+  });
+
+  it("flushes a final unterminated line at EOF", async () => {
+    const init = JSON.stringify({ jsonrpc: "2.0", id: 2, method: "initialize" });
+    const { io, out } = memoryIO([init]); // no trailing newline → exercised by flush()
+    await serve(OPTIONS, io);
+    expect(out.some((line) => (JSON.parse(line) as { id?: number }).id === 2)).toBe(true);
+  });
+
+  it("decodes byte-chunk input as well as strings", async () => {
+    const init = JSON.stringify({ jsonrpc: "2.0", id: 3, method: "initialize" });
+    const out: string[] = [];
+    const io: ServerIO = {
+      input: (async function* () {
+        yield new TextEncoder().encode(`${init}\n`);
+      })(),
+      output: { write: (chunk) => out.push(chunk) },
+      log: { write: () => {} },
+    };
+    await serve(OPTIONS, io);
+    expect(out.some((line) => (JSON.parse(line) as { id?: number }).id === 3)).toBe(true);
+  });
+});
+
+describe("run", () => {
+  it("returns 2 and prints usage for --help", async () => {
+    const { io, log } = memoryIO([]);
+    expect(await run(["--help"], {}, io)).toBe(2);
+    expect(log.join("")).toContain("acp-mayor");
+  });
+
+  it("returns 1 and prints the error for a bad option", async () => {
+    const { io, log } = memoryIO([]);
+    expect(await run(["--nope"], {}, io)).toBe(1);
+    expect(log.join("")).toContain("unknown option");
+  });
+
+  it("serves to a clean exit (0) when the input stream closes", async () => {
+    const { io } = memoryIO([]); // empty input → serve resolves immediately
+    expect(await run(["http://stub"], {}, io)).toBe(0);
+  });
+
+  it("returns 1 and logs when serving throws", async () => {
+    const log: string[] = [];
+    const io: ServerIO = {
+      // eslint-disable-next-line require-yield -- intentionally errors before emitting any line
+      input: (async function* () {
+        throw new Error("io exploded");
+      })(),
+      output: { write: () => {} },
+      log: { write: (chunk) => log.push(chunk) },
+    };
+    expect(await run(["http://stub"], {}, io)).toBe(1);
+    expect(log.join("")).toContain("io exploded");
+  });
+
+  it("binds the real process streams by default (help path needs no stdin)", async () => {
+    // No io argument → run() constructs processIO(); --help returns before reading stdin.
+    expect(await run(["--help"], {})).toBe(2);
   });
 });
 

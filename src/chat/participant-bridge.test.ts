@@ -143,6 +143,20 @@ describe("describePending", () => {
     expect(md).toContain("`approve`");
     expect(md).toContain("`deny`");
   });
+
+  it("falls back to a generic line when kind / prompt / options are absent", () => {
+    const md = describePending({ kind: "", request_id: "p2" });
+    expect(md).toContain("input"); // the default kind word
+    expect(md).not.toContain("Options:");
+    // No prompt body and no options list — just the single header line.
+    expect(md).toBe("**The Mayor needs your input** — input.");
+  });
+
+  it("omits the options line when the prompt is present but options are empty", () => {
+    const md = describePending({ kind: "prompt-for-input", request_id: "p3", prompt: "Name?", options: [] });
+    expect(md).toContain("Name?");
+    expect(md).not.toContain("Options:");
+  });
 });
 
 describe("driveTurn", () => {
@@ -220,6 +234,61 @@ describe("driveTurn", () => {
     const pending = { kind: "tool-approval", request_id: "p1", prompt: "Approve deploy?" };
     store.set({ pending });
     expect(await result).toEqual({ status: "pending", pending });
+  });
+
+  it("surfaces a store connection error as a turn error", async () => {
+    const store = new FakeStore();
+    const { sink } = fakeSink();
+    const result = driveTurn({
+      store,
+      endpoint: ENDPOINT,
+      prompt: "hi",
+      signal: new AbortController().signal,
+      sink,
+      awaitSubmitOutcome: neverOutcome,
+    });
+    await tick();
+
+    store.set({ connection: "error", lastError: "stream blew up" });
+    expect(await result).toEqual({ status: "error", message: "stream blew up" });
+  });
+
+  it("completes when the per-session stream closes without an idle transition", async () => {
+    const store = new FakeStore();
+    const { sink } = fakeSink();
+    const result = driveTurn({
+      store,
+      endpoint: ENDPOINT,
+      prompt: "hi",
+      signal: new AbortController().signal,
+      sink,
+      awaitSubmitOutcome: neverOutcome,
+    });
+    await tick();
+
+    store.set({ connection: "closed" });
+    expect(await result).toEqual({ status: "completed" });
+  });
+
+  it("passes a non-default intent through and tolerates a submit without an event cursor", async () => {
+    const store = new FakeStore();
+    // An empty event_cursor is falsy, so the correlation params omit it (the other branch).
+    store.submitResult = { ok: true, data: { request_id: "r2", event_cursor: "", status: "accepted" } };
+    const { sink } = fakeSink();
+    const outcome = deferredOutcome();
+    const result = driveTurn({
+      store,
+      endpoint: ENDPOINT,
+      prompt: "hi",
+      intent: "follow_up",
+      signal: new AbortController().signal,
+      sink,
+      awaitSubmitOutcome: outcome.fn,
+    });
+    await tick();
+
+    outcome.resolve({ kind: "succeeded", type: "request.result.session.submit" });
+    expect(await result).toEqual({ status: "completed" });
   });
 
   it("returns an error when the submit is rejected", async () => {

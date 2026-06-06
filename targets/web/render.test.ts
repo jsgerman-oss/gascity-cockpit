@@ -140,6 +140,15 @@ describe("renderFleetPane", () => {
     expect(html).not.toContain("<script>");
     expect(html).toContain("&lt;script&gt;");
   });
+
+  it("marks a stopped city instead of listing agents", () => {
+    const html = renderFleetPane({
+      status: "ready",
+      data: fleet({ cities: [city({ name: "beta", running: false })] }),
+    });
+    expect(html).toContain("beta");
+    expect(html).toContain("stopped");
+  });
 });
 
 describe("renderBeadsPane", () => {
@@ -264,5 +273,33 @@ describe("renderTelemetryPane", () => {
       data: stateWith([{ promptTokens: 100, completionTokens: 50, costUsd: 0.01 }]),
     });
     expect(html).not.toContain("not yet reported");
+  });
+
+  // A synthetic state lets us drive the empty-scope and eviction branches the
+  // store wouldn't naturally produce from a couple of operations.
+  function syntheticState(over: Partial<core.telemetry.TelemetryState>): core.telemetry.TelemetryState {
+    const tokens = { promptIn: 0, completionOut: 0, cacheCreation: 0, cacheRead: 0, measuredOps: 0 };
+    return {
+      agents: [],
+      beads: [],
+      totals: { operations: 1, succeeded: 1, failed: 0, durationMs: 0, tokens, costUsd: null, costMeasuredOps: 0, agents: 0, beads: 0 },
+      stream: null,
+      evicted: false,
+      anyCostMeasured: false,
+      ...over,
+    };
+  }
+
+  it("shows a 'none yet' note when a scope list is empty despite operations", () => {
+    const html = renderTelemetryPane({ status: "ready", data: syntheticState({}) });
+    expect(html).toContain("none yet"); // both By agent and By bead lists are empty
+  });
+
+  it("notes evicted scopes once the cap is reached", () => {
+    const html = renderTelemetryPane({
+      status: "ready",
+      data: syntheticState({ evicted: true, anyCostMeasured: true }),
+    });
+    expect(html).toContain("Older scopes dropped");
   });
 });

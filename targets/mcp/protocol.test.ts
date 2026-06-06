@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 import * as core from "../../src/core/index.ts";
 import { mockFetch, jsonResponse, problemResponse } from "../../src/test/helpers.ts";
-import { TOOLS, type ToolContext } from "./tools.ts";
+import { TOOLS, type ToolContext, type ToolDefinition } from "./tools.ts";
 import {
   createDispatcher,
   INVALID_PARAMS,
@@ -64,6 +64,12 @@ describe("initialize handshake", () => {
   it("falls back to the default protocol version when the client omits one", async () => {
     const { dispatcher } = stubDispatcher();
     const res = asSuccess(await dispatcher.handle({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} }));
+    expect((res.result as Record<string, unknown>).protocolVersion).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("falls back to the default protocol version when params are absent entirely", async () => {
+    const { dispatcher } = stubDispatcher();
+    const res = asSuccess(await dispatcher.handle({ jsonrpc: "2.0", id: 1, method: "initialize" }));
     expect((res.result as Record<string, unknown>).protocolVersion).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
@@ -167,5 +173,41 @@ describe("error mapping", () => {
   it("ignores an unknown notification (no id) silently", async () => {
     const { dispatcher } = stubDispatcher();
     expect(await dispatcher.handle({ jsonrpc: "2.0", method: "notifications/cancelled" })).toBeNull();
+  });
+
+  it("rejects a request whose method is not a string", async () => {
+    const { dispatcher } = stubDispatcher();
+    const res = asError(await dispatcher.handle({ jsonrpc: "2.0", id: 1, method: 42 }));
+    expect(res.error.code).toBe(INVALID_REQUEST);
+    expect(res.error.message).toContain("missing method");
+  });
+
+  it("ignores a notification whose method is not a string", async () => {
+    const { dispatcher } = stubDispatcher();
+    expect(await dispatcher.handle({ jsonrpc: "2.0", method: 42 })).toBeNull();
+  });
+
+  it("coerces a non-scalar id to null in the response", async () => {
+    const { dispatcher } = stubDispatcher();
+    const res = asSuccess(await dispatcher.handle({ jsonrpc: "2.0", id: { weird: true }, method: "ping" }));
+    expect(res.id).toBeNull();
+  });
+
+  it("maps a throwing tool handler to an isError result, not a protocol error", async () => {
+    const throwing: ToolDefinition = {
+      name: "boom",
+      description: "always throws, to exercise the catch path",
+      inputSchema: { type: "object" },
+      handler: async () => {
+        throw new Error("kaboom");
+      },
+    };
+    const dispatcher = createDispatcher({ serverInfo: { name: "t", version: "0" }, tools: [throwing], context: {} as never });
+    const res = asSuccess(
+      await dispatcher.handle({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "boom" } }),
+    );
+    const result = res.result as { content: Array<{ text: string }>; isError?: boolean };
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text).error).toBe("kaboom");
   });
 });

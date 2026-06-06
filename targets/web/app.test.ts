@@ -4,6 +4,7 @@
 // wiring without a browser, a network, or a real supervisor.
 import { describe, expect, it } from "vitest";
 import * as core from "../../src/core/index.ts";
+import { jsonResponse, mockFetch } from "../../src/test/helpers.ts";
 import { type PaneId, createWebApp } from "./app.ts";
 
 /** Records the latest HTML mounted per pane. */
@@ -143,6 +144,56 @@ describe("createWebApp", () => {
     expect(rec.last.fleet).toContain("fleet boom");
     expect(rec.last.beads).toContain("Couldn&#39;t load beads.");
     expect(rec.last.beads).toContain("beads boom");
+  });
+
+  it("normalizes a non-Error rejection into a display cause", async () => {
+    const rec = recorder();
+    const app = createWebApp({
+      baseUrl: "http://x",
+      mount: rec.mount,
+      createClient: () => client,
+      fetchFleet: () => Promise.reject("plain string boom"), // a non-Error rejection
+      loadBeads: () => Promise.resolve(emptyBeads),
+      createTelemetryStream: () => fakeStream().stream,
+    });
+    await app.refresh();
+    expect(rec.last.fleet).toContain("plain string boom");
+  });
+
+  it("uses the real fleet/beads core seams against the injected client", async () => {
+    // Only the client + telemetry stream are injected; fetchFleet / loadBeads fall
+    // through to their core defaults, exercised here against a mock-fetch client.
+    const { fetch } = mockFetch((req) => {
+      const path = new URL(req.url).pathname;
+      if (path === "/v0/health") return jsonResponse({ status: "ok", version: "dev" });
+      return jsonResponse({ items: [] }); // /v0/cities and any fan-out
+    });
+    const mockClient = core.api.createCockpitClient({ baseUrl: "http://x", fetch });
+    const rec = recorder();
+    const app = createWebApp({
+      baseUrl: "http://x",
+      mount: rec.mount,
+      createClient: () => mockClient,
+      createTelemetryStream: () => fakeStream().stream,
+      // fetchFleet + loadBeads omitted → the default core seams run.
+    });
+    await app.refresh();
+    expect(rec.last.fleet).toBeDefined();
+    expect(rec.last.beads).toBeDefined();
+  });
+
+  it("falls back to the real telemetry-stream factory when none is injected", () => {
+    // Omitting createTelemetryStream exercises the default `new TelemetryStream`
+    // seam; start() connects it and dispose() tears it down immediately.
+    const app = createWebApp({
+      baseUrl: "http://127.0.0.1:0", // unroutable; the stream aborts on dispose before any data
+      mount: () => {},
+      createClient: () => client,
+      fetchFleet: () => Promise.resolve(emptyFleet),
+      loadBeads: () => Promise.resolve(emptyBeads),
+    });
+    app.start();
+    app.dispose();
   });
 
   it("tears down the telemetry stream on dispose", () => {
