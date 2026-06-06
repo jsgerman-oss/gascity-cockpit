@@ -17,6 +17,15 @@ const chatFeature: CockpitFeature = {
           openChat({ endpoint: host.getEndpoint(), log: host.log, ...(preset ? { preset } : {}) }),
       ),
     );
+
+    // Always-visible affordance so the Mayor chat is discoverable rather than
+    // buried in the command palette: a status-bar button that opens the chat.
+    const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 99);
+    status.text = '$(comment-discussion) Mayor';
+    status.tooltip = 'Chat with the Mayor (GasCity Cockpit)';
+    status.command = `${CONFIG_SECTION}.openChat`;
+    status.show();
+    host.context.subscriptions.push(status);
   },
 };
 
