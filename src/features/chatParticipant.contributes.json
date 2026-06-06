@@ -1,0 +1,17 @@
+{
+  "chatParticipants": [
+    {
+      "id": "gascityCockpit.mayor",
+      "name": "mayor",
+      "fullName": "Mayor",
+      "description": "Coordinate the GasCity fleet — chat with the Mayor over the /v0 API",
+      "isSticky": true,
+      "commands": [
+        {
+          "name": "city",
+          "description": "Choose which city's Mayor to talk to"
+        }
+      ]
+    }
+  ]
+}

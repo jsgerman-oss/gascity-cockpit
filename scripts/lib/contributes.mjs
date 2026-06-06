@@ -56,15 +56,16 @@ export function orderManifests(manifests) {
 
 /**
  * Merge ordered manifests into one `contributes` object. Object-of-array keys
- * (`viewsContainers`, `views`, `menus`) merge per sub-key; `commands` concatenate;
- * `configuration` takes the first declared `title` and unions `properties`. Keys
- * are emitted in VS Code's conventional order.
+ * (`viewsContainers`, `views`, `menus`) merge per sub-key; `commands` and
+ * `chatParticipants` concatenate; `configuration` takes the first declared
+ * `title` and unions `properties`. Keys are emitted in VS Code's conventional order.
  */
 export function mergeContributes(manifests) {
   const viewsContainers = {};
   const views = {};
   const commands = [];
   const menus = {};
+  const chatParticipants = [];
   let configTitle;
   const configProperties = {};
   let hasViewsContainers = false;
@@ -92,6 +93,9 @@ export function mergeContributes(manifests) {
         (menus[menu] ??= []).push(...entries);
       }
     }
+    // `chatParticipants` is a flat array like `commands`: each entry is a
+    // self-contained participant declaration, so concatenation is the whole merge.
+    if (contributes.chatParticipants) chatParticipants.push(...contributes.chatParticipants);
     if (contributes.configuration) {
       hasConfiguration = true;
       if (configTitle === undefined && contributes.configuration.title) {
@@ -107,5 +111,7 @@ export function mergeContributes(manifests) {
   if (commands.length) merged.commands = commands;
   if (hasMenus) merged.menus = menus;
   if (hasConfiguration) merged.configuration = { title: configTitle, properties: configProperties };
+  // Appended last so adding it does not reorder the existing contributes keys.
+  if (chatParticipants.length) merged.chatParticipants = chatParticipants;
   return merged;
 }

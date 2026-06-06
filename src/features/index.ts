@@ -20,6 +20,7 @@ import beadFromSelectionFeature from './beadFromSelection.feature.ts';
 import codeNavFeature from './codeNav.feature.ts';
 import formulaFlowsFeature from './formulaFlows.feature.ts';
 import chatFeature from './chat.feature.ts';
+import chatParticipantFeature from './chatParticipant.feature.ts';
 import dashboardFeature from './dashboard.feature.ts';
 import extmsgFeature from './extmsg.feature.ts';
 import fleetQueryFeature from './fleetQuery.feature.ts';
@@ -38,6 +39,7 @@ export const FEATURES: readonly CockpitFeature[] = [
   codeNavFeature,
   formulaFlowsFeature,
   chatFeature,
+  chatParticipantFeature,
   dashboardFeature,
   extmsgFeature,
   fleetQueryFeature,

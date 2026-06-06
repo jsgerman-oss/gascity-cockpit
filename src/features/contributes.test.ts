@@ -74,6 +74,23 @@ describe("contributes manifests", () => {
     expect(bag(collectArray("commands"))).toEqual(bag(contributes.commands as unknown[]));
   });
 
+  it("merges to exactly package.json chatParticipants", () => {
+    expect(bag(collectArray("chatParticipants"))).toEqual(
+      bag((contributes.chatParticipants as unknown[] | undefined) ?? []),
+    );
+  });
+
+  it("declares every chat participant id exactly once", () => {
+    const seen = new Map<string, string>();
+    for (const { id, contributes: c } of manifests) {
+      for (const p of (c.chatParticipants as { id: string }[] | undefined) ?? []) {
+        const prior = seen.get(p.id);
+        expect(prior, `${p.id} declared by both ${prior} and ${id}`).toBeUndefined();
+        seen.set(p.id, id);
+      }
+    }
+  });
+
   it("merges to exactly package.json views, viewsContainers and menus", () => {
     for (const key of ["views", "viewsContainers", "menus"] as const) {
       const merged = collectGrouped(key);
