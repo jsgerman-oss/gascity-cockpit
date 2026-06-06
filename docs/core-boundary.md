@@ -66,6 +66,7 @@ config. Each target is `{ entryPoints, outfile, … }` merged over `common`
 | fleet-status | `targets/cli/main.ts` | `dist/targets/fleet-status.js` | no `vscode`; `#!/usr/bin/env node` banner |
 | mcp-gascity | `targets/mcp/main.ts` | `dist/targets/mcp-gascity.js` | no `vscode`; MCP server over stdio ([docs](./mcp-context-server.md)) |
 | web | `targets/web/main.ts` | `dist/web/app.js` | `platform: browser`; ships `index.html`/`styles.css` via `assets`; DOM-typed by [`targets/web/tsconfig.json`](../targets/web/tsconfig.json) ([companion-web.md](./companion-web.md)) |
+| acp-mayor | `targets/acp/main.ts` | `dist/targets/acp-mayor.js` | the Mayor as a Zed/ACP agent ([acp-mayor.md](./acp-mayor.md)); no `vscode` |
 
 A target that ships static files beside its bundle lists them in an `assets`
 array (`[from, to]` pairs); the build copies them into `dist/` after bundling. A
@@ -104,9 +105,9 @@ node dist/targets/fleet-status.js --help
 
 ## Adding a new sibling target
 
-The fan-out targets (the landed [MCP server](./mcp-context-server.md) and
-[web companion](./companion-web.md); an ACP adapter next) follow the same shape
-— no build reinvention:
+The fan-out targets (the landed [MCP server](./mcp-context-server.md),
+[web companion](./companion-web.md), and [ACP adapter](./acp-mayor.md)) follow
+the same shape — no build reinvention:
 
 1. Add `targets/<name>/` with an entry that `import * as core from
    "../../src/core/index.ts"` (or the specific namespaces it needs).

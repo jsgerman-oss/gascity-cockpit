@@ -12,11 +12,14 @@
 //                   browser bundle (platform: browser) that imports the same
 //                   src/core; its index.html + styles.css are copied beside the
 //                   bundle so dist/web/ is a self-contained static bundle.
+//   - acp-mayor     an ACP adapter (targets/acp) over stdio that exposes the
+//                   Mayor chat to Zed / JetBrains / the VS Code ACP extension as
+//                   a JSON-RPC external agent.
 //
-// A new sibling target (an ACP adapter next) adds one entry to `buildTargets`
-// below and imports `src/core`; it does not reinvent the build (cockpit-dc8.4).
-// A non-Node target overrides `platform`/`format`; static files to ship beside a
-// bundle go in `assets`. See docs/core-boundary.md.
+// A new sibling target adds one entry to `buildTargets` below and imports
+// `src/core`; it does not reinvent the build (cockpit-dc8.4). A non-Node target
+// overrides `platform`/`format`; static files to ship beside a bundle go in
+// `assets`. See docs/core-boundary.md.
 import esbuild from "esbuild";
 import { copyFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
@@ -56,6 +59,13 @@ const buildTargets = [
       ["targets/web/index.html", "dist/web/index.html"],
       ["targets/web/styles.css", "dist/web/styles.css"],
     ],
+  },
+  {
+    // ACP adapter (cockpit-dc8.5): exposes the Mayor to Zed / JetBrains / the
+    // VS Code ACP extension over JSON-RPC on stdio. No `vscode`; imports `src/core`.
+    entryPoints: ["targets/acp/main.ts"],
+    outfile: "dist/targets/acp-mayor.js",
+    banner: { js: "#!/usr/bin/env node" },
   },
 ];
 

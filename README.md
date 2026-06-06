@@ -242,6 +242,58 @@ Use `--rig <name>` to scope it to a single rig instead of `--town`. See [pack/do
 
 Open the city's workspace in VS Code. The Cockpit auto-discovers the supervisor (default `http://127.0.0.1:8372`; override with the `gascityCockpit.api.url` setting). Run **GasCity Cockpit: Check API Connection** from the command palette to confirm.
 
+## Use the Mayor from Zed
+
+You don't have to be in VS Code to talk to the Mayor. **`acp-mayor`** exposes the
+Mayor chat as an [Agent Client Protocol](https://agentclientprotocol.com) agent —
+the protocol Zed (and the JetBrains / VS Code ACP extensions) use to drive
+external agents. It's a standalone Node process that bridges ACP ⇄ the same `/v0`
+session API the extension uses, so a prompt in Zed's agent panel runs against your
+live Mayor, streams the reply back token-by-token, and surfaces tool-approvals as
+native Zed permission prompts.
+
+**1. Build the adapter** (it's a sibling build target, no extra install):
+
+```bash
+npm install
+npm run build            # produces dist/targets/acp-mayor.js (among the targets)
+```
+
+**2. Register it in Zed.** Add an entry to your Zed `settings.json`
+(<kbd>Cmd</kbd>+<kbd>,</kbd>), pointing at the built adapter and your city:
+
+```jsonc
+{
+  "agent_servers": {
+    "GasCity Mayor": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/gascity-cockpit/dist/targets/acp-mayor.js",
+        "--city=your-city"
+      ],
+      "env": {}
+    }
+  }
+}
+```
+
+**3. Chat.** Open Zed's agent panel, pick **GasCity Mayor**, and prompt away.
+
+Configuration is by flag or environment variable (flags win):
+
+| Flag | Env | Default | Meaning |
+|---|---|---|---|
+| `--endpoint=URL` (or positional) | `GASCITY_API_URL` | `http://127.0.0.1:8372` | Supervisor base URL |
+| `--city=NAME` | `GASCITY_CITY` | the sole city, if unambiguous | Target city |
+| `--session=ID` | `GASCITY_MAYOR_SESSION` | `mayor` | Mayor session id / alias |
+| `--token=TOKEN` | `GASCITY_API_TOKEN` | _(none)_ | Bearer token, if the supervisor requires one |
+| `--permission-mode=MODE` | `GASCITY_PERMISSION_MODE` | _(unset)_ | Initial permission mode (`default` / `acceptEdits` / `plan`) |
+
+The adapter speaks JSON-RPC on **stdout** and keeps all diagnostics on stderr.
+This exposes the **chat/agent slice only** — the dashboard and explorers stay in
+the VS Code extension. See [docs/acp-mayor.md](docs/acp-mayor.md) for the full
+ACP ⇄ `/v0` mapping and design.
+
 ## Prerequisites
 
 - Node.js 20+ and npm.
@@ -328,6 +380,7 @@ deferred until it is stable.
 - [Worktree code lens](docs/worktree-code-lens.md)
 - [Core boundary & multi-target build](docs/core-boundary.md) — the `vscode`-free core shared by non-extension targets
 - [MCP context server](docs/mcp-context-server.md) — drive the fleet from Zed / Copilot / Claude Code over MCP
+- [acp-mayor](docs/acp-mayor.md) — talk to the Mayor from Zed / JetBrains / the VS Code ACP extension
 
 ## Contributing
 
