@@ -22,6 +22,7 @@ import {
   deriveDisplayStatus,
   displayStatusLabel,
   displayStatusRank,
+  isOperationalBead,
   priorityLabel,
   priorityRank,
 } from "./status.ts";
@@ -45,6 +46,11 @@ export function filterRecords(
     // Hide closed beads unless the caller asked for them, either via the global
     // toggle or by naming "closed" explicitly in the status filter.
     if (status === "closed" && !filters.includeClosed && !(filters.status?.includes("closed"))) {
+      return false;
+    }
+    // Operational wisps (nudges, orders, patrols, sessions, mail) are plumbing,
+    // not work — hidden unless the operator explicitly opts to show them.
+    if (filters.hideOperational !== false && isOperationalBead(record.bead)) {
       return false;
     }
     if (filters.status && filters.status.length > 0 && !filters.status.includes(status)) {

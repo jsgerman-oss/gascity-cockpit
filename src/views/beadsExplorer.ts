@@ -42,11 +42,13 @@ const VIEW_ID = "gascityCockpit.beads";
 const BEAD_SCHEME = "gascity-bead";
 const STATE_GROUP_BY = "beads.groupBy";
 const STATE_INCLUDE_CLOSED = "beads.includeClosed";
+const STATE_HIDE_OPERATIONAL = "beads.hideOperational";
 
 const CMD = {
   refresh: "gascityCockpit.beads.refresh",
   setGroupBy: "gascityCockpit.beads.setGroupBy",
   toggleClosed: "gascityCockpit.beads.toggleClosed",
+  toggleOperational: "gascityCockpit.beads.toggleOperational",
   filter: "gascityCockpit.beads.filter",
   clearFilters: "gascityCockpit.beads.clearFilters",
   openDetail: "gascityCockpit.beads.openDetail",
@@ -74,13 +76,22 @@ class BeadsTreeDataProvider implements vscode.TreeDataProvider<BeadTreeNode> {
   private lastError: string | null = null;
   private spec: BeadViewSpec;
   private includeClosed: boolean;
+  private hideOperational: boolean;
 
   constructor(
     private readonly repository: BeadsRepository,
-    initial: { groupBy: GroupKey; includeClosed: boolean },
+    initial: { groupBy: GroupKey; includeClosed: boolean; hideOperational: boolean },
   ) {
     this.includeClosed = initial.includeClosed;
-    this.spec = { groupBy: initial.groupBy, filters: { ...DEFAULT_FILTERS, includeClosed: initial.includeClosed } };
+    this.hideOperational = initial.hideOperational;
+    this.spec = {
+      groupBy: initial.groupBy,
+      filters: {
+        ...DEFAULT_FILTERS,
+        includeClosed: initial.includeClosed,
+        hideOperational: initial.hideOperational,
+      },
+    };
   }
 
   getTreeItem(node: BeadTreeNode): vscode.TreeItem {
@@ -117,7 +128,10 @@ class BeadsTreeDataProvider implements vscode.TreeDataProvider<BeadTreeNode> {
   }
 
   setFilters(filters: BeadFilters): void {
-    this.spec = { ...this.spec, filters: { ...filters, includeClosed: this.includeClosed } };
+    this.spec = {
+      ...this.spec,
+      filters: { ...filters, includeClosed: this.includeClosed, hideOperational: this.hideOperational },
+    };
     this.rebuild();
   }
 
@@ -125,6 +139,13 @@ class BeadsTreeDataProvider implements vscode.TreeDataProvider<BeadTreeNode> {
     this.includeClosed = value;
     this.spec = { ...this.spec, filters: { ...this.spec.filters, includeClosed: value } };
     await this.refresh();
+  }
+
+  // Operational filtering is purely client-side, so just rebuild — no refetch.
+  setHideOperational(value: boolean): void {
+    this.hideOperational = value;
+    this.spec = { ...this.spec, filters: { ...this.spec.filters, hideOperational: value } };
+    this.rebuild();
   }
 
   async refresh(): Promise<void> {
@@ -354,8 +375,9 @@ export function registerBeadsExplorer(
   const storedGroupBy = context.globalState.get<GroupKey>(STATE_GROUP_BY, "status");
   const groupBy = GROUP_KEYS.includes(storedGroupBy) ? storedGroupBy : "status";
   const includeClosed = context.globalState.get<boolean>(STATE_INCLUDE_CLOSED, false);
+  const hideOperational = context.globalState.get<boolean>(STATE_HIDE_OPERATIONAL, true);
 
-  const provider = new BeadsTreeDataProvider(deps.repository, { groupBy, includeClosed });
+  const provider = new BeadsTreeDataProvider(deps.repository, { groupBy, includeClosed, hideOperational });
   const treeView = vscode.window.createTreeView(VIEW_ID, { treeDataProvider: provider, showCollapseAll: true });
   const detailProvider = new BeadDetailContentProvider(deps.repository);
   const openDetail = (city: string, id: string, ready: boolean | null): void => {
@@ -391,6 +413,12 @@ export function registerBeadsExplorer(
       await provider.setIncludeClosed(next);
       await context.globalState.update(STATE_INCLUDE_CLOSED, next);
       void vscode.window.showInformationMessage(`Closed beads ${next ? "shown" : "hidden"}.`);
+    }),
+    vscode.commands.registerCommand(CMD.toggleOperational, async () => {
+      const next = !provider.filters.hideOperational;
+      provider.setHideOperational(next);
+      await context.globalState.update(STATE_HIDE_OPERATIONAL, next);
+      void vscode.window.showInformationMessage(`Operational wisps ${next ? "hidden" : "shown"}.`);
     }),
     vscode.commands.registerCommand(CMD.filter, async () => {
       await runFilterPicker(provider);

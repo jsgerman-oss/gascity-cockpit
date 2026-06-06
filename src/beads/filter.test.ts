@@ -141,3 +141,20 @@ describe("buildBeadTree", () => {
     expect(firstGroup.children[0].beadId).toBeDefined();
   });
 });
+
+describe("filterRecords — hideOperational", () => {
+  const mixed = (): BeadRecord[] => [
+    makeRecord({ id: "bh-cpvn", issue_type: "chore", status: "open" }, true),
+    makeRecord({ id: "bh-wisp-1", issue_type: "chore", title: "nudge:nudge-x", labels: ["gc:nudge"], status: "open" }, true),
+    makeRecord({ id: "bh-wisp-2", issue_type: "message", status: "open" }, true),
+  ];
+
+  it("hides operational wisps by default", () => {
+    expect(filterRecords(mixed(), { ...DEFAULT_FILTERS }).map((r) => r.bead.id)).toEqual(["bh-cpvn"]);
+  });
+
+  it("shows them when hideOperational is false", () => {
+    const ids = filterRecords(mixed(), { ...DEFAULT_FILTERS, hideOperational: false }).map((r) => r.bead.id).sort();
+    expect(ids).toEqual(["bh-cpvn", "bh-wisp-1", "bh-wisp-2"]);
+  });
+});

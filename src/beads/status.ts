@@ -112,6 +112,24 @@ export function beadType(bead: Bead): string {
   return bead.issue_type && bead.issue_type.length > 0 ? bead.issue_type : UNTYPED;
 }
 
+const OPERATIONAL_TYPES = new Set(["message", "molecule", "session", "event"]);
+const OPERATIONAL_LABEL_RE = /^(?:gc:nudge|gc:session|gc:order|order-run|order-tracking)\b/;
+const OPERATIONAL_TITLE_RE = /^(?:nudge:|order:)/;
+
+/**
+ * True for Gas Town's operational machinery — nudge wisps, patrol / order-run
+ * wisps, agent-session and mail beads — rather than real work items. These
+ * dominate a coordination city's ledger, so the explorer hides them by default
+ * (toggleable). Any one signal is enough: a `-wisp-` id, an operational
+ * `issue_type`, a `nudge:` / `order:` title, or a gc:nudge / order-run label.
+ */
+export function isOperationalBead(bead: Bead): boolean {
+  if (bead.id.includes("-wisp-")) return true;
+  if (bead.issue_type && OPERATIONAL_TYPES.has(bead.issue_type)) return true;
+  if (OPERATIONAL_TITLE_RE.test(bead.title ?? "")) return true;
+  return (bead.labels ?? []).some((label) => OPERATIONAL_LABEL_RE.test(label));
+}
+
 function titleCase(s: string): string {
   if (!s) return s;
   return s
