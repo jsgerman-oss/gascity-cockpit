@@ -115,4 +115,15 @@ describe('FleetStatusStore', () => {
     expect(store.state.lastError).toBe('API unavailable');
     expect(store.state.events.map((e) => e.seq)).toEqual([7]);
   });
+
+  it('dispose tears down the change emitter so listeners stop firing', () => {
+    const store = new FleetStatusStore();
+    const listener = vi.fn();
+    store.onDidChange(listener);
+
+    store.dispose();
+    store.setError('after dispose');
+
+    expect(listener).not.toHaveBeenCalled();
+  });
 });

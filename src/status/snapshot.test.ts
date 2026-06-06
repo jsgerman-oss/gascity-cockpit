@@ -110,4 +110,83 @@ describe('fetchFleetSnapshot', () => {
     const snap = await fetchFleetSnapshot(client);
     expect(snap.cities).toEqual([]);
   });
+
+  it('records a partial error and empty list when city enumeration returns an error response', async () => {
+    const mock = server({
+      '/health': () => jsonResponse(healthBody),
+      '/v0/cities': () => problemResponse({ title: 'cities down', status: 500 }, { status: 500 }),
+    });
+    const client = createCockpitClient({ baseUrl: 'http://api.test', fetch: mock.fetch });
+
+    const snap = await fetchFleetSnapshot(client);
+
+    expect(snap.cities).toEqual([]);
+    expect(snap.partialErrors.some((e) => e.startsWith('cities:'))).toBe(true);
+  });
+
+  it('survives the client throwing on health and cities (network failure)', async () => {
+    const mock = server({
+      '/health': () => {
+        throw new TypeError('network down');
+      },
+      '/v0/cities': () => {
+        throw new TypeError('network down');
+      },
+    });
+    const client = createCockpitClient({ baseUrl: 'http://api.test', fetch: mock.fetch });
+
+    const snap = await fetchFleetSnapshot(client);
+
+    expect(snap.health).toBeNull();
+    expect(snap.cities).toEqual([]);
+    expect(snap.partialErrors.some((e) => e.startsWith('health:'))).toBe(true);
+    expect(snap.partialErrors.some((e) => e.startsWith('cities:'))).toBe(true);
+  });
+
+  it('records partial errors when agent and session calls throw, without aborting', async () => {
+    const mock = server({
+      '/health': () => jsonResponse(healthBody),
+      '/v0/cities': () => jsonResponse({ total: 1, items: [{ name: 'alpha', path: '/a', running: true }] }),
+      '/v0/city/alpha/agents': () => {
+        throw new TypeError('agents socket reset');
+      },
+      '/v0/city/alpha/sessions': () => {
+        throw new TypeError('sessions socket reset');
+      },
+    });
+    const client = createCockpitClient({ baseUrl: 'http://api.test', fetch: mock.fetch });
+
+    const snap = await fetchFleetSnapshot(client);
+
+    expect(snap.agentsByCity.alpha).toEqual([]);
+    expect(snap.sessionsByCity.alpha).toEqual([]);
+    expect(snap.partialErrors.some((e) => e.startsWith('agents[alpha]'))).toBe(true);
+    expect(snap.partialErrors.some((e) => e.startsWith('sessions[alpha]'))).toBe(true);
+  });
+
+  it('treats null agent/session items as empty and records a session error response', async () => {
+    const mock = server({
+      '/health': () => jsonResponse(healthBody),
+      '/v0/cities': () =>
+        jsonResponse({
+          total: 2,
+          items: [
+            { name: 'alpha', path: '/a', running: true },
+            { name: 'beta', path: '/b', running: true },
+          ],
+        }),
+      '/v0/city/alpha/agents': () => jsonResponse({ total: 0, items: null }),
+      '/v0/city/alpha/sessions': () => jsonResponse({ total: 0, items: null }),
+      '/v0/city/beta/agents': () => jsonResponse({ total: 0, items: [] }),
+      '/v0/city/beta/sessions': () => problemResponse({ title: 'sessions down', status: 500 }, { status: 500 }),
+    });
+    const client = createCockpitClient({ baseUrl: 'http://api.test', fetch: mock.fetch });
+
+    const snap = await fetchFleetSnapshot(client);
+
+    expect(snap.agentsByCity.alpha).toEqual([]);
+    expect(snap.sessionsByCity.alpha).toEqual([]);
+    expect(snap.sessionsByCity.beta).toEqual([]);
+    expect(snap.partialErrors.some((e) => e.startsWith('sessions[beta]'))).toBe(true);
+  });
 });

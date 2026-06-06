@@ -52,6 +52,13 @@ describe('parseFleetEvent', () => {
     expect(parseFleetEvent(msg({ data: JSON.stringify({ seq: 1 }) }))).toBeNull(); // no type
     expect(parseFleetEvent(msg({ data: JSON.stringify({ type: 'x' }) }))).toBeNull(); // no seq
   });
+
+  it('defaults ts, actor, and city to empty strings when missing or non-string', () => {
+    const event = parseFleetEvent(
+      msg({ data: JSON.stringify({ type: 'x', seq: 9, ts: 5, actor: null, city: { nested: true } }) }),
+    );
+    expect(event).toEqual({ seq: 9, type: 'x', ts: '', actor: '', city: '' });
+  });
 });
 
 describe('affectsStatusPanes', () => {
@@ -201,5 +208,171 @@ describe('SupervisorEventStream', () => {
     await tick();
     expect(opens).toBe(1);
     stream.stop();
+  });
+
+  it('threads injected fetch and headers into the openSSE options', async () => {
+    let captured: { fetch?: unknown; headers?: unknown } | undefined;
+    const openStream = (_url: string, opts: { signal?: AbortSignal; fetch?: unknown; headers?: unknown }) => {
+      captured = opts;
+      return (async function* () {
+        await new Promise<void>((resolve) => opts.signal?.addEventListener('abort', () => resolve(), { once: true }));
+        yield* []; // never yields; parks until aborted (satisfies require-yield)
+      })();
+    };
+    const fakeFetch = (async () => new Response('')) as unknown as typeof fetch;
+    const stream = new SupervisorEventStream('http://api.test', {
+      openStream,
+      sleep: () => Promise.resolve(),
+      fetch: fakeFetch,
+      headers: { 'x-trace': 'abc' },
+    });
+
+    stream.start();
+    await tick();
+
+    expect(captured?.fetch).toBe(fakeFetch);
+    expect(captured?.headers).toEqual({ 'x-trace': 'abc' });
+    stream.stop();
+  });
+
+  it('drops in-flight events once the generation changes mid-stream', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    const openStream = (_url: string, _opts: unknown) =>
+      (async function* () {
+        yield eventMsg(1, 'cur-1');
+        await gate;
+        yield eventMsg(2, 'cur-2');
+      })();
+    const stream = new SupervisorEventStream('http://api.test', { openStream, sleep: () => Promise.resolve() });
+    const events: FleetEvent[] = [];
+    stream.onEvent((e) => events.push(e));
+
+    stream.start();
+    await tick();
+    expect(events.map((e) => e.seq)).toEqual([1]);
+
+    stream.stop(); // invalidate the run loop's generation
+    release(); // unpark the generator; the next message must be discarded
+    await tick();
+
+    expect(events.map((e) => e.seq)).toEqual([1]);
+    expect(stream.currentStatus.state).toBe('stopped');
+  });
+
+  it('returns from the run loop when aborted during a failed connection', async () => {
+    const openStream = (_url: string, _opts: unknown) =>
+      (async function* () {
+        await Promise.resolve(); // defer the throw past a microtask so stop() can interleave
+        yield* []; // satisfies require-yield; the throw below surfaces in the run loop's catch
+        throw new Error('deferred failure');
+      })();
+    const sleepCalls: number[] = [];
+    const sleep = (ms: number) => {
+      sleepCalls.push(ms);
+      return Promise.resolve();
+    };
+    const stream = new SupervisorEventStream('http://api.test', { openStream, sleep });
+
+    stream.start();
+    stream.stop(); // abort before the deferred failure surfaces
+    await tick();
+    await tick();
+
+    expect(sleepCalls).toEqual([]); // never reached backoff — returned at the alive check
+    expect(stream.currentStatus.state).toBe('stopped');
+  });
+
+  it('stringifies a non-Error thrown by the stream for the warn log', async () => {
+    const logs: Array<{ level: string; meta?: Record<string, unknown> }> = [];
+    const log = (level: string, _message: string, meta?: Record<string, unknown>) => logs.push({ level, meta });
+    let i = 0;
+    const openStream = (_url: string, opts: { signal?: AbortSignal }) => {
+      i += 1;
+      if (i === 1) throw 'plain failure'; // non-Error throw
+      return (async function* () {
+        await new Promise<void>((resolve) => opts.signal?.addEventListener('abort', () => resolve(), { once: true }));
+        yield* []; // never yields; parks until aborted (satisfies require-yield)
+      })();
+    };
+    const sleepResolvers: Array<() => void> = [];
+    const sleep = (_ms: number, signal: AbortSignal) =>
+      new Promise<void>((resolve, reject) => {
+        sleepResolvers.push(resolve);
+        signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+      });
+    const stream = new SupervisorEventStream('http://api.test', { openStream, sleep, log, random: () => 0 });
+
+    stream.start();
+    await tick();
+
+    expect(logs.some((l) => l.level === 'warn' && l.meta?.error === 'plain failure')).toBe(true);
+    sleepResolvers.shift()?.();
+    await tick();
+    stream.stop();
+  });
+
+  it('uses the built-in sleep to back off between reconnects when none is injected', async () => {
+    let i = 0;
+    const openStream = (_url: string, opts: { signal?: AbortSignal }) => {
+      i += 1;
+      if (i === 1) throw new Error('first connection fails');
+      return (async function* () {
+        yield eventMsg(7, 'cur-7');
+        await new Promise<void>((resolve) => opts.signal?.addEventListener('abort', () => resolve(), { once: true }));
+        yield* []; // never yields; parks until aborted (satisfies require-yield)
+      })();
+    };
+    const stream = new SupervisorEventStream('http://api.test', {
+      openStream,
+      random: () => 0,
+      options: { baseDelayMs: 1, maxDelayMs: 1, jitterFactor: 0 },
+    });
+    const events: FleetEvent[] = [];
+    stream.onEvent((e) => events.push(e));
+
+    stream.start();
+    // Wait for the real ~1ms backoff timer to fire and the reconnect to deliver.
+    await new Promise<void>((r) => setTimeout(r, 25));
+
+    expect(events.map((e) => e.seq)).toEqual([7]);
+    stream.stop();
+  });
+
+  it('the built-in sleep rejects and the loop exits cleanly when aborted during backoff', async () => {
+    const openStream = (_url: string, _opts: unknown) => {
+      throw new Error('always fails');
+    };
+    const stream = new SupervisorEventStream('http://api.test', {
+      openStream,
+      random: () => 0,
+      options: { baseDelayMs: 10_000, maxDelayMs: 10_000, jitterFactor: 0 },
+    });
+
+    stream.start();
+    await tick(); // first connection fails, now parked in the built-in sleep on a long timer
+    expect(stream.currentStatus.state).toBe('reconnecting');
+
+    stream.stop(); // abort fires the sleep's listener: clearTimeout + reject
+    await tick();
+
+    expect(stream.currentStatus.state).toBe('stopped');
+  });
+
+  it('dispose() stops the stream and tears down the emitters', async () => {
+    const openStream = (_url: string, opts: { signal?: AbortSignal }) =>
+      (async function* () {
+        await new Promise<void>((resolve) => opts.signal?.addEventListener('abort', () => resolve(), { once: true }));
+        yield* []; // never yields; parks until aborted (satisfies require-yield)
+      })();
+    const stream = new SupervisorEventStream('http://api.test', { openStream, sleep: () => Promise.resolve() });
+    stream.start();
+    await tick();
+    expect(stream.currentStatus.state).toBe('connecting');
+
+    stream.dispose();
+    expect(stream.currentStatus.state).toBe('stopped');
   });
 });

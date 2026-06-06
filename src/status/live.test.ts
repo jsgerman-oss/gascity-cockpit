@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createCockpitClient, type CockpitClient } from '../api/index';
-import { Emitter } from '../discovery/index';
+import { Emitter, type Logger } from '../discovery/index';
 import { jsonResponse, mockFetch, problemResponse } from '../test/helpers';
-import { LiveStatus } from './live';
+import { LiveStatus, type LiveStatusOptions } from './live';
 import { FleetStatusStore } from './store';
 import type { SupervisorEventStream } from './events';
 import type { CityInfo, EventStreamStatus, FleetEvent } from './types';
@@ -74,7 +74,7 @@ function fakeTimers() {
   };
 }
 
-function setup() {
+function setup(extra: { log?: Logger; realTimers?: boolean; options?: Partial<LiveStatusOptions> } = {}) {
   let cities: CityInfo[] = [{ name: 'alpha', path: '/a', running: true }];
   const setCities = (next: CityInfo[]) => {
     cities = next;
@@ -95,8 +95,10 @@ function setup() {
     store,
     createClient: (): CockpitClient => client,
     createStream: (): SupervisorEventStream => fake as unknown as SupervisorEventStream,
-    setTimer: timers.setTimer,
-    clearTimer: timers.clearTimer,
+    // Omit the injected timers to exercise the real setTimeout/clearTimeout defaults.
+    ...(extra.realTimers ? {} : { setTimer: timers.setTimer, clearTimer: timers.clearTimer }),
+    ...(extra.log ? { log: extra.log } : {}),
+    ...(extra.options ? { options: extra.options } : {}),
   });
   return { store, fake, timers, live, setCities };
 }
@@ -215,5 +217,93 @@ describe('LiveStatus', () => {
     await tick();
     live.connect({ baseUrl: 'http://api.test' });
     expect(fake.disposed).toBe(1);
+  });
+
+  it('dispose() tears down the active connection', async () => {
+    const { fake, store, live } = setup();
+    live.connect({ baseUrl: 'http://api.test' });
+    await tick();
+
+    live.dispose();
+    expect(fake.disposed).toBe(1);
+    expect(store.state.loading).toBe(false);
+  });
+
+  it('refreshNow is a no-op while disconnected', async () => {
+    const { store, live, setCities } = setup();
+    // No client yet — must not throw or mutate.
+    live.refreshNow();
+    expect(store.state.cities).toEqual([]);
+
+    live.connect({ baseUrl: 'http://api.test' });
+    await tick();
+    expect(store.state.cities.map((c) => c.name)).toEqual(['alpha']);
+
+    live.disconnect();
+    // Client cleared — refreshNow must not pull the now-changed cities.
+    setCities([{ name: 'should-not-appear', path: '/x', running: true }]);
+    live.refreshNow();
+    await tick();
+    expect(store.state.cities.map((c) => c.name)).toEqual(['alpha']);
+  });
+
+  it('records a snapshot apply failure as a store error and logs it', async () => {
+    const logs: Array<{ level: string; meta?: Record<string, unknown> }> = [];
+    const { store, live } = setup({ log: (level, _message, meta) => logs.push({ level, meta }) });
+    store.applySnapshot = () => {
+      throw new Error('apply boom');
+    };
+
+    live.connect({ baseUrl: 'http://api.test' });
+    await tick();
+
+    expect(store.state.lastError).toContain('snapshot failed');
+    expect(store.state.lastError).toContain('apply boom');
+    expect(logs.some((l) => l.level === 'warn' && l.meta?.error === 'apply boom')).toBe(true);
+  });
+
+  it('stringifies a non-Error snapshot failure', async () => {
+    const { store, live } = setup();
+    store.applySnapshot = () => {
+      throw 'plain failure';
+    };
+
+    live.connect({ baseUrl: 'http://api.test' });
+    await tick();
+
+    expect(store.state.lastError).toBe('snapshot failed: plain failure');
+  });
+
+  it('supersedes an in-flight snapshot when a new refresh starts before it lands', async () => {
+    const { store, live } = setup();
+    live.connect({ baseUrl: 'http://api.test' });
+    // Second refresh while the first is still awaiting fetchFleetSnapshot — the
+    // prior AbortController must be aborted and its result discarded.
+    live.refreshNow();
+    await tick();
+
+    expect(store.state.cities.map((c) => c.name)).toEqual(['alpha']);
+  });
+
+  it('falls back to real setTimeout/clearTimeout when no timers are injected', async () => {
+    const { store, fake, live, setCities } = setup({ realTimers: true, options: { refreshDebounceMs: 1 } });
+    live.connect({ baseUrl: 'http://api.test' });
+    await tick();
+
+    // A status-affecting event schedules a debounced refresh on the real timer.
+    setCities([
+      { name: 'alpha', path: '/a', running: true },
+      { name: 'beta', path: '/b', running: true },
+    ]);
+    fake.emit(event(1));
+    await new Promise<void>((r) => setTimeout(r, 25));
+    expect(store.state.cities.map((c) => c.name)).toEqual(['alpha', 'beta']);
+
+    // Schedule another, then tear down so the real clearTimeout default runs.
+    fake.emit(event(2));
+    live.disconnect();
+    await new Promise<void>((r) => setTimeout(r, 10));
+    // The cleared timer never fired a third refresh.
+    expect(store.state.cities.map((c) => c.name)).toEqual(['alpha', 'beta']);
   });
 });

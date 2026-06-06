@@ -72,6 +72,21 @@ describe('TelemetryStore', () => {
     expect(store.state.totals.costUsd).toBeCloseTo(0.03, 6);
   });
 
+  it('folds cache-creation and cache-read tokens into scope, model and totals', () => {
+    const store = new TelemetryStore();
+    store.addOperation(op({ seq: 1, cacheCreationTokens: 500, cacheReadTokens: 1200 }));
+
+    const agent = store.state.agents[0]!;
+    expect(agent.tokens.cacheCreation).toBe(500);
+    expect(agent.tokens.cacheRead).toBe(1200);
+    expect(agent.tokens.measuredOps).toBe(1);
+    expect(agent.models[0]!.tokens.cacheCreation).toBe(500);
+    expect(agent.models[0]!.tokens.cacheRead).toBe(1200);
+    expect(store.state.totals.tokens.cacheCreation).toBe(500);
+    expect(store.state.totals.tokens.cacheRead).toBe(1200);
+    expect(store.state.anyCostMeasured).toBe(true);
+  });
+
   it('counts successes and failures at scope, model and totals', () => {
     const store = new TelemetryStore();
     store.addOperation(op({ seq: 1, ok: true }));
@@ -131,5 +146,16 @@ describe('TelemetryStore', () => {
     store.setStreamStatus({ state: 'open', detail: 'streaming', attempt: 0 });
     expect(store.state.stream?.state).toBe('open');
     expect(fires).toBe(1);
+  });
+
+  it('dispose tears down the change emitter so listeners stop firing', () => {
+    const store = new TelemetryStore();
+    let fires = 0;
+    store.onDidChange(() => (fires += 1));
+
+    store.dispose();
+    store.setStreamStatus({ state: 'open', detail: 'streaming', attempt: 0 });
+
+    expect(fires).toBe(0);
   });
 });
