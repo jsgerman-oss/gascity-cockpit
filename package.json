@@ -644,7 +644,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check": "npm run typecheck && npm run lint && npm run test",
+    "check": "npm run typecheck && npm run lint && npm run test:coverage",
     "vscode:prepublish": "npm run build",
     "package": "vsce package --no-dependencies"
   },
