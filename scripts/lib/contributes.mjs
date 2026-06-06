@@ -23,6 +23,7 @@ const MANIFEST_SUFFIX = '.contributes.json';
  */
 export const FEATURE_ORDER = [
   '_core',
+  'chatView',
   'status',
   'beads',
   'telemetry',

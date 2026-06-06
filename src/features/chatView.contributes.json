@@ -1,0 +1,40 @@
+{
+  "views": {
+    "gascityCockpit": [
+      {
+        "id": "gascityCockpit.chatView",
+        "type": "webview",
+        "name": "Mayor",
+        "contextualTitle": "GasCity Mayor Chat"
+      }
+    ]
+  },
+  "commands": [
+    {
+      "command": "gascityCockpit.chatView.switch",
+      "title": "GasCity Cockpit: Switch Chat City / Session",
+      "category": "GasCity Cockpit",
+      "icon": "$(arrow-swap)"
+    },
+    {
+      "command": "gascityCockpit.chatView.popOut",
+      "title": "GasCity Cockpit: Open Chat in Editor",
+      "category": "GasCity Cockpit",
+      "icon": "$(link-external)"
+    }
+  ],
+  "menus": {
+    "view/title": [
+      {
+        "command": "gascityCockpit.chatView.switch",
+        "when": "view == gascityCockpit.chatView",
+        "group": "navigation@1"
+      },
+      {
+        "command": "gascityCockpit.chatView.popOut",
+        "when": "view == gascityCockpit.chatView",
+        "group": "navigation@2"
+      }
+    ]
+  }
+}

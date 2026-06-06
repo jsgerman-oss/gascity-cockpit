@@ -57,4 +57,14 @@ describe("getChatHtml", () => {
   it("focuses the message box on load", () => {
     expect(html).toContain("els.input.focus()");
   });
+
+  it("renders a notice in place of the transcript when one is present", () => {
+    // The docked view (cockpit-dc8.1) posts a connecting/empty/error notice
+    // before it is bound; the client script must render it and disable the
+    // composer rather than show a blank pane.
+    expect(html).toContain("function renderNotice");
+    expect(html).toContain("if (state.notice)");
+    expect(html).toContain("els.input.disabled = true");
+    expect(html).toContain(".notice-label");
+  });
 });

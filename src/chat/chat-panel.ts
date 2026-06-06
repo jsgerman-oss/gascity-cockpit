@@ -9,8 +9,8 @@ import { ConversationStore, type ConversationState } from "./conversation-store.
 import { isWebviewToHost, toViewState, type HostToWebview } from "./protocol.ts";
 import { getChatHtml } from "./webview-html.ts";
 
-/** A 32-char nonce locking the webview's inline script to this load. */
-function makeNonce(): string {
+/** A 32-char nonce locking the webview's inline script to this load. Shared with the docked chat view. */
+export function makeNonce(): string {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let out = "";
   for (const byte of randomBytes(32)) {

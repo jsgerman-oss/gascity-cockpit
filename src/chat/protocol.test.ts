@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ConversationState } from "./conversation-store.ts";
-import { isWebviewToHost, toViewState } from "./protocol.ts";
+import { isWebviewToHost, noticeViewState, toViewState } from "./protocol.ts";
 
 const baseState: ConversationState = {
   cityName: "blackrim-hq",
@@ -58,6 +58,37 @@ describe("toViewState", () => {
   it("defaults a pending prompt/options to empty when absent", () => {
     const view = toViewState({ ...baseState, pending: { kind: "prompt-for-input", request_id: "p2" } });
     expect(view.pending).toEqual({ kind: "prompt-for-input", prompt: "", options: [], requestId: "p2" });
+  });
+
+  it("never overlays a notice on a live conversation", () => {
+    expect(toViewState(baseState).notice).toBeNull();
+  });
+});
+
+describe("noticeViewState", () => {
+  it("carries the notice, shows no conversation, and disables nothing it can't", () => {
+    const view = noticeViewState(
+      { tone: "loading", label: "Connecting to supervisor…" },
+      { cityName: "blackrim-hq" },
+    );
+    expect(view.notice).toEqual({ tone: "loading", label: "Connecting to supervisor…" });
+    expect(view.turns).toEqual([]);
+    expect(view.pending).toBeNull();
+    expect(view.cityName).toBe("blackrim-hq");
+    expect(view.connection).toBe("idle");
+  });
+
+  it("marks an error-tone notice's connection as error", () => {
+    const view = noticeViewState({ tone: "error", label: "Couldn't load the Mayor chat.", detail: "down" });
+    expect(view.connection).toBe("error");
+    expect(view.notice?.detail).toBe("down");
+  });
+
+  it("falls back to a Mayor title and empty ref fields", () => {
+    const view = noticeViewState({ tone: "empty", label: "No Mayor session yet" });
+    expect(view.title).toBe("Mayor");
+    expect(view.cityName).toBe("");
+    expect(view.sessionId).toBe("");
   });
 });
 

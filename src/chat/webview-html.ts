@@ -73,6 +73,12 @@ export function getChatHtml(options: ChatHtmlOptions): string {
     .turn.role-user .text { color: var(--vscode-foreground); }
     .turn.role-assistant .text, .turn.role-mayor .text { color: var(--vscode-foreground); }
     .empty { color: var(--vscode-descriptionForeground); font-style: italic; }
+    /* The "no live conversation yet" overlay (connecting / empty / failed) the
+       docked view shows in place of the transcript. Centred in the log area. */
+    .notice { margin: auto; max-width: 40ch; padding: 16px; text-align: center; display: flex; flex-direction: column; gap: 6px; color: var(--vscode-descriptionForeground); }
+    .notice-label { font-weight: 600; color: var(--vscode-foreground); }
+    .notice-error .notice-label { color: var(--vscode-errorForeground); }
+    .notice-detail { font-size: 0.9em; }
     #pending {
       margin: 0 12px;
       padding: 8px 10px;
@@ -191,6 +197,23 @@ export function getChatHtml(options: ChatHtmlOptions): string {
         els.log.scrollTop = els.log.scrollHeight;
       }
 
+      function renderNotice(notice) {
+        els.log.innerHTML = '';
+        const box = document.createElement('div');
+        box.className = 'notice notice-' + String(notice.tone || 'empty');
+        const label = document.createElement('div');
+        label.className = 'notice-label';
+        label.textContent = notice.label || '';
+        box.appendChild(label);
+        if (notice.detail) {
+          const detail = document.createElement('div');
+          detail.className = 'notice-detail';
+          detail.textContent = notice.detail;
+          box.appendChild(detail);
+        }
+        els.log.appendChild(box);
+      }
+
       function renderPending(pending) {
         els.pendingActions.innerHTML = '';
         if (!pending) {
@@ -219,8 +242,22 @@ export function getChatHtml(options: ChatHtmlOptions): string {
         const bits = [];
         if (state.provider) bits.push(state.provider);
         if (state.permissionMode) bits.push('mode: ' + state.permissionMode);
-        bits.push(state.cityName);
+        if (state.cityName) bits.push(state.cityName);
         els.meta.textContent = bits.join(' · ');
+
+        if (state.notice) {
+          // No live conversation yet — show a single connecting/empty/error
+          // notice in place of the transcript, mirror it in the status line, and
+          // disable the composer (there is no session to submit to).
+          renderNotice(state.notice);
+          renderPending(null);
+          els.status.textContent = state.notice.label || '';
+          els.status.className = state.notice.tone === 'error' ? 'error' : '';
+          els.send.disabled = true;
+          els.input.disabled = true;
+          return;
+        }
+        els.input.disabled = false;
 
         const statusText = state.activity === 'in-turn'
           ? 'working…'

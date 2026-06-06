@@ -27,6 +27,19 @@ export interface ChatPendingView {
 }
 
 /**
+ * A non-conversation overlay the chat surface shows instead of a transcript —
+ * "connecting", "nothing here", or "load failed". Used by the docked Mayor chat
+ * view (cockpit-dc8.1) before it is bound to a live session, so the pane never
+ * ships blank. `tone` mirrors the shared {@link StateTone} vocabulary
+ * (cockpit-1ll.19); `label`/`detail` carry the copy its helpers produce.
+ */
+export interface ChatNotice {
+  tone: "loading" | "empty" | "error";
+  label: string;
+  detail?: string;
+}
+
+/**
  * The serializable view-model the webview renders. A flat projection of
  * {@link ConversationState} — no functions, no `undefined`-vs-missing ambiguity
  * for the fields the UI binds to — safe to `postMessage` across the host bridge.
@@ -44,6 +57,13 @@ export interface ChatViewState {
   permissionMode: string | null;
   sending: boolean;
   error: string | null;
+  /**
+   * A "no live conversation" overlay (connecting / empty / failed), or null when
+   * a real conversation is being shown. A live store always projects `null` here
+   * (see {@link toViewState}); only the docked view injects one via
+   * {@link noticeViewState} while it resolves or loses its session.
+   */
+  notice: ChatNotice | null;
 }
 
 /** Project store state into the webview view-model. Pure. */
@@ -75,6 +95,37 @@ export function toViewState(state: ConversationState): ChatViewState {
     permissionMode: state.permissionMode,
     sending: state.sending,
     error: state.lastError,
+    // A live conversation never overlays a notice; the docked view supplies one
+    // only via noticeViewState when it has no store to project.
+    notice: null,
+  };
+}
+
+/**
+ * Build a placeholder {@link ChatViewState} that carries a single
+ * {@link ChatNotice} and no live conversation — what the docked Mayor chat view
+ * shows before it is bound to a session (connecting to the supervisor, no Mayor
+ * found, or a load failure). The webview renders the notice in place of the
+ * transcript and disables the composer. Pure.
+ */
+export function noticeViewState(
+  notice: ChatNotice,
+  ref: { cityName?: string; sessionId?: string; title?: string } = {},
+): ChatViewState {
+  return {
+    cityName: ref.cityName ?? "",
+    sessionId: ref.sessionId ?? "",
+    title: ref.title ?? ref.sessionId ?? "Mayor",
+    provider: null,
+    connection: notice.tone === "error" ? "error" : "idle",
+    activity: "unknown",
+    turns: [],
+    pending: null,
+    capabilities: { followUp: false, interruptNow: false },
+    permissionMode: null,
+    sending: false,
+    error: null,
+    notice,
   };
 }
 

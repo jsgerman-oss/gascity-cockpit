@@ -13,7 +13,9 @@ export {
 export {
   isWebviewToHost,
   toViewState,
+  noticeViewState,
   SUBMIT_INTENTS,
+  type ChatNotice,
   type ChatPendingView,
   type ChatTurnView,
   type ChatViewState,
@@ -22,6 +24,7 @@ export {
 } from "./protocol.ts";
 export { getChatHtml, escapeHtml, type ChatHtmlOptions } from "./webview-html.ts";
 export { ChatPanel } from "./chat-panel.ts";
+export { ChatViewProvider, type ChatViewHost } from "./chat-view.ts";
 export {
   isLikelyMayor,
   rankSessionsForChat,

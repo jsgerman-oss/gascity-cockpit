@@ -125,6 +125,7 @@ describe("contributes manifests", () => {
   it("preserves the activity-bar view order", () => {
     const ids = (contributes.views as Record<string, { id: string }[]>).gascityCockpit.map((v) => v.id);
     expect(ids).toEqual([
+      "gascityCockpit.chatView",
       "gascityCockpit.fleet",
       "gascityCockpit.events",
       "gascityCockpit.beads",

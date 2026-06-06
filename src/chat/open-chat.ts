@@ -52,7 +52,7 @@ export async function openChat(args: OpenChatArgs): Promise<void> {
  * when the supervisor can't be listed or knows of no cities, so an offline or
  * single-city operator is never blocked.
  */
-async function pickCity(client: CockpitClient, log: Logger): Promise<string | undefined> {
+export async function pickCity(client: CockpitClient, log: Logger): Promise<string | undefined> {
   const result = await listCities(client);
   if (!result.ok) {
     log("warn", `chat: could not list cities: ${result.error.title}`);
@@ -90,7 +90,7 @@ async function promptCity(prompt = "City name"): Promise<string | undefined> {
   return value?.trim() || undefined;
 }
 
-async function pickSession(
+export async function pickSession(
   client: CockpitClient,
   cityName: string,
   log: Logger,
