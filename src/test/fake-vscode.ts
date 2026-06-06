@@ -559,6 +559,10 @@ function makeWebview(): FakeWebview {
 
 function makeWebviewPanel(viewType: string, title: string): FakeWebviewPanel {
   const disposeEmitter = new EventEmitter<void>();
+  // VS Code fires `onDidDispose` at most once and ignores repeat `dispose()`
+  // calls. Model that here: a panel whose own dispose handler calls
+  // `panel.dispose()` again (the singleton webview glue does) must not re-enter.
+  let disposed = false;
   const panel: FakeWebviewPanel = {
     viewType,
     title,
@@ -569,7 +573,11 @@ function makeWebviewPanel(viewType: string, title: string): FakeWebviewPanel {
     onDidChangeViewState: new EventEmitter<unknown>().event,
     reveal: () => undefined,
     dispose: () => panel.fireDispose(),
-    fireDispose: () => disposeEmitter.fire(),
+    fireDispose: () => {
+      if (disposed) return;
+      disposed = true;
+      disposeEmitter.fire();
+    },
   };
   return panel;
 }
