@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>GasCity Cockpit — Web Companion</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__title">
+        <h1>GasCity Cockpit</h1>
+        <span class="topbar__tag">web companion · read-only</span>
+      </div>
+      <div class="topbar__meta">
+        <span class="topbar__endpoint">/v0 @ <code id="endpoint">…</code></span>
+        <button id="refresh" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <main class="panes">
+      <section class="pane" aria-labelledby="fleet-title">
+        <h2 id="fleet-title" class="pane__title">Fleet</h2>
+        <div id="fleet-body" class="pane__body"></div>
+      </section>
+
+      <section class="pane" aria-labelledby="beads-title">
+        <h2 id="beads-title" class="pane__title">Beads</h2>
+        <div id="beads-body" class="pane__body"></div>
+      </section>
+
+      <section class="pane" aria-labelledby="telemetry-title">
+        <h2 id="telemetry-title" class="pane__title">Telemetry</h2>
+        <div id="telemetry-body" class="pane__body"></div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

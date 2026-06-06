@@ -1,0 +1,18 @@
+{
+  // The web companion is the one build target that runs in a browser, so it
+  // needs the DOM lib the root config (Node/extension) deliberately omits. It is
+  // excluded from the root tsconfig and typechecked here instead — `npm run
+  // typecheck` runs both projects. `types: []` drops the ambient @types/node and
+  // @types/vscode globals so this target is checked against the browser platform
+  // only; every global it (and the imported `src/core`) touches — fetch, SSE
+  // ReadableStream, TextDecoder, AbortController — comes from the DOM lib.
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": []
+  },
+  // Clear the root's `exclude` (which lists targets/web, so this project would
+  // otherwise exclude its own inputs); `include` already scopes us to this dir.
+  "exclude": [],
+  "include": ["./**/*.ts"]
+}

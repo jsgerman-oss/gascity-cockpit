@@ -22,5 +22,8 @@
     "noEmit": true
   },
   "include": ["src", "targets", "scripts", "esbuild.mjs", "vitest.config.ts"],
-  "exclude": ["node_modules", "dist", "out", ".vscode-test"]
+  // targets/web runs in the browser and needs the DOM lib; it is typechecked by
+  // its own targets/web/tsconfig.json (wired into `npm run typecheck`) so this
+  // Node/extension config stays DOM-free.
+  "exclude": ["node_modules", "dist", "out", ".vscode-test", "targets/web"]
 }

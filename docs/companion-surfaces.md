@@ -149,7 +149,7 @@ The premise (shared client) holds; these are the real costs the sub-epic owns.
 
 | Surface | Buildable now? | Blocked on |
 |---|---|---|
-| Web companion, **read-only**, served on **localhost** | **Yes** — shared core + CORS for the localhost origin | (2) localhost CORS only |
+| Web companion, **read-only**, served on **localhost** | **Shipped** (`cockpit-dc8.7`, [companion-web.md](./companion-web.md)) — same-origin launch server sidesteps (2) | — |
 | Web companion, **write/chat/approve**, localhost | Mostly | (5) identity/approval authority |
 | Web companion served **remotely** | No | (1) auth + TLS, (2) CORS, (3) discovery |
 | **Mobile** companion (PWA or native), any network | No | (1) auth + TLS, (2) CORS, (3) discovery, (5) identity |
@@ -176,10 +176,15 @@ extraction unblocks the companion.
   remaining step if/when this repo becomes a monorepo; the import surface is
   already what such a package would expose. Pure addition, no extension
   behaviour change — like `cockpit-1ll.15`.
-- **Phase 2 — Web companion MVP (localhost, read-only).** A minimal SPA on the
-  shared core: Fleet/event feed (live over SSE), Beads explorer, town-topology
-  SVG, merge queue. Reuses the renderers; rebuilds only the shell. Proves the
-  reuse end-to-end in a browser and exercises the CORS requirement (2) concretely.
+- **Phase 2 — Web companion MVP (localhost, read-only). SHIPPED**
+  (`cockpit-dc8.7`, [companion-web.md](./companion-web.md)). A framework-free app
+  on the shared core with three read-only panes — **Fleet**, **Beads** (explorer
+  filters reused), **Telemetry** (live over the `worker.operation` SSE feed) —
+  plus a launch server that serves the static bundle and reverse-proxies `/v0`.
+  Proves the reuse end-to-end in a browser and meets the CORS requirement (2)
+  concretely by serving same-origin (real cross-origin CORS stays the Phase-3
+  server-side gap). Remaining same-surface additions (town-topology SVG, merge
+  queue, the event feed) reuse renderers that already exist and need only shell.
 - **Phase 3 — Server-side enablers (filed against gastown).** `/v0` CORS/origin
   policy; the discovery descriptor producer; then the real token model + TLS.
   **External dependency**, tracked, not built in this repo. Gates everything below.
