@@ -5,9 +5,12 @@
 //   - fleet-status  a stub non-extension CLI (targets/cli) that imports the
 //                   shared core boundary (src/core) and prints the fleet over
 //                   /v0 — proof the core is consumable outside the editor.
+//   - mcp-gascity   an MCP context server (targets/mcp) over stdio that exposes
+//                   the fleet/beads/telemetry/merge-queue/events surface as MCP
+//                   tools to any client (Zed, Copilot, Claude Code).
 //
-// A new sibling target (ACP adapter, MCP server, web companion) adds one entry
-// to `buildTargets` below and imports `src/core`; it does not reinvent the build
+// A new sibling target (ACP adapter, web companion) adds one entry to
+// `buildTargets` below and imports `src/core`; it does not reinvent the build
 // (cockpit-dc8.4). See docs/core-boundary.md.
 import esbuild from "esbuild";
 
@@ -26,6 +29,13 @@ const buildTargets = [
     // Non-extension CLI. No `vscode`; runnable with `node dist/targets/fleet-status.js`.
     entryPoints: ["targets/cli/main.ts"],
     outfile: "dist/targets/fleet-status.js",
+    banner: { js: "#!/usr/bin/env node" },
+  },
+  {
+    // MCP context server over stdio. No `vscode`; run by an MCP client as
+    // `node dist/targets/mcp-gascity.js`.
+    entryPoints: ["targets/mcp/main.ts"],
+    outfile: "dist/targets/mcp-gascity.js",
     banner: { js: "#!/usr/bin/env node" },
   },
 ];

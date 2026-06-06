@@ -105,8 +105,10 @@ above. What's on the horizon now:
 
 - **Telemetry, end to end** — the cost/tier pane is in, but full fidelity needs `/v0` to
   expose model-advisor and token-budget data; an upstream Gas City API change is filed.
-- **Companion surfaces, for real** — the spike proved the core is portable; next is an actual
-  web / mobile companion on the shared typed client.
+- **Companion surfaces, for real** — the spike proved the core is portable, and the first
+  realized companion has landed: an [MCP context server](docs/mcp-context-server.md) that
+  drives the fleet from Zed / Copilot / Claude Code over the shared typed client. A web /
+  mobile companion is next.
 - **Beyond localhost** — a remote + auth story so you can drive cities you don't own (v1 is
   localhost-only by design; the seams are already in place).
 - **Consistent edges** — unified empty / loading / error states across every pane (in flight).
@@ -324,6 +326,8 @@ deferred until it is stable.
 - [Merge queue review](docs/merge-queue-review.md)
 - [Native notifications](docs/notifications.md)
 - [Worktree code lens](docs/worktree-code-lens.md)
+- [Core boundary & multi-target build](docs/core-boundary.md) — the `vscode`-free core shared by non-extension targets
+- [MCP context server](docs/mcp-context-server.md) — drive the fleet from Zed / Copilot / Claude Code over MCP
 
 ## Contributing
 

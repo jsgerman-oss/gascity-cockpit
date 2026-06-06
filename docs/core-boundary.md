@@ -64,6 +64,7 @@ config. Each target is `{ entryPoints, outfile, … }` merged over `common`
 |---|---|---|---|
 | extension | `src/extension.ts` | `dist/extension.js` | `vscode` external (provided by the editor) |
 | fleet-status | `targets/cli/main.ts` | `dist/targets/fleet-status.js` | no `vscode`; `#!/usr/bin/env node` banner |
+| mcp-gascity | `targets/mcp/main.ts` | `dist/targets/mcp-gascity.js` | no `vscode`; MCP server over stdio ([docs](./mcp-context-server.md)) |
 
 `npm run compile` / `npm run build` build **all** targets; `npm run watch`
 watches all of them. The CLI typechecks under `npm run typecheck` (`targets/` is
@@ -96,8 +97,8 @@ node dist/targets/fleet-status.js --help
 
 ## Adding a new sibling target
 
-The fan-out targets (ACP adapter, MCP server, web companion) follow the same
-shape — no build reinvention:
+The fan-out targets (the landed [MCP server](./mcp-context-server.md); an ACP
+adapter and web companion next) follow the same shape — no build reinvention:
 
 1. Add `targets/<name>/` with an entry that `import * as core from
    "../../src/core/index.ts"` (or the specific namespaces it needs).
