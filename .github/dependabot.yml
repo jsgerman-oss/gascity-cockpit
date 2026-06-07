@@ -1,12 +1,22 @@
 version: 2
 updates:
-  # Keep pinned GitHub Actions current, including Raftersecurity/rafter-cli.
-  # Grouped into a single weekly PR to avoid a flood of one-per-action PRs.
+  # GitHub Actions versions (including Raftersecurity/rafter-cli), grouped weekly.
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
     groups:
       github-actions:
+        patterns:
+          - "*"
+  # npm dependencies in both the extension root and the docs site, grouped weekly.
+  - package-ecosystem: npm
+    directories:
+      - "/"
+      - "/site"
+    schedule:
+      interval: weekly
+    groups:
+      npm:
         patterns:
           - "*"
