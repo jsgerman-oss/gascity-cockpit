@@ -5,9 +5,10 @@ import { defineConfig } from "vitest/config";
 // and tested in plain Node — it never imports `vscode`, so no editor runtime is needed.
 export default defineConfig({
   test: {
-    // Cores live under src/; non-extension build targets (the CLI, future ACP/MCP
-    // adapters) live under targets/ and carry their own tests.
-    include: ["src/**/*.test.ts", "targets/**/*.test.ts"],
+    // Cores live under src/; non-extension build targets (the CLI, ACP/MCP/web
+    // adapters) live under targets/; standalone apps (the web companion) live
+    // under packages/. All carry their own tests.
+    include: ["src/**/*.test.ts", "targets/**/*.test.ts", "packages/**/*.test.ts"],
     environment: "node",
     // There is no `vscode` runtime in node_modules (only `@types/vscode`), so the
     // host-abstracted features — which reach `vscode` transitively through their
@@ -30,7 +31,7 @@ export default defineConfig({
       // Count every accessible source file, even those no test imports yet, so
       // the report shows the true surface (uncovered files appear at 0%).
       all: true,
-      include: ["src/**/*.ts", "targets/**/*.ts"],
+      include: ["src/**/*.ts", "targets/**/*.ts", "packages/**/*.ts"],
       // Three kinds of exclusion only:
       //  (1) nothing to cover — generated client, tests, type-only decls,
       //      barrels (re-exports), and data fixtures/test helpers.
@@ -51,6 +52,7 @@ export default defineConfig({
       exclude: [
         "src/api/generated/**",
         "src/**/*.test.ts",
+        "packages/**/*.test.ts",
         "src/**/types.ts",
         "src/**/index.ts",
         "src/**/fixtures.ts",
@@ -72,6 +74,7 @@ export default defineConfig({
         "targets/acp/main.ts",
         "targets/mcp/main.ts",
         "targets/web/main.ts",
+        "packages/companion/main.ts",
       ],
       // Target gate (≥95 everywhere testable). NOT yet wired into `npm run
       // check` — flip on after the fill phase brings cores to green, so

@@ -61,6 +61,21 @@ const buildTargets = [
     ],
   },
   {
+    // Standalone web companion (cockpit-tzy, epic cockpit-gj9). Same shape as the
+    // `web` PoC target — a browser bundle on src/core with its HTML/CSS shell
+    // copied beside it into a self-contained dist/companion/ — but a standalone
+    // app under packages/, the foundation the companion epic grows on the same
+    // typed client + live store. See packages/companion/README.md.
+    entryPoints: ["packages/companion/main.ts"],
+    outfile: "dist/companion/app.js",
+    platform: "browser",
+    format: "iife",
+    assets: [
+      ["packages/companion/index.html", "dist/companion/index.html"],
+      ["packages/companion/styles.css", "dist/companion/styles.css"],
+    ],
+  },
+  {
     // ACP adapter (cockpit-dc8.5): exposes the Mayor to Zed / JetBrains / the
     // VS Code ACP extension over JSON-RPC on stdio. No `vscode`; imports `src/core`.
     entryPoints: ["targets/acp/main.ts"],

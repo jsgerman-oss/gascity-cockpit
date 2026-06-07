@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>GasCity Cockpit — Companion</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__title">
+        <h1>GasCity Cockpit</h1>
+        <span class="topbar__tag">companion · read-only</span>
+      </div>
+      <div class="topbar__meta">
+        <span class="topbar__endpoint">/v0 @ <code id="endpoint">…</code></span>
+        <button id="refresh" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <main class="panes">
+      <section class="pane" aria-labelledby="health-title">
+        <h2 id="health-title" class="pane__title">City Health</h2>
+        <div id="health-body" class="pane__body"></div>
+      </section>
+
+      <section class="pane" aria-labelledby="events-title">
+        <h2 id="events-title" class="pane__title">Event Feed</h2>
+        <div id="events-body" class="pane__body"></div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+{
+  // The companion runs in a browser, so it needs the DOM lib the root config
+  // (Node/extension) deliberately omits. `packages/` is outside the root
+  // tsconfig `include`, so this project is what typechecks the companion; it is
+  // wired into `npm run typecheck`. `types: []` drops the ambient @types/node and
+  // @types/vscode globals so the app is checked against the browser platform
+  // only — every global it (and the imported `src/core`) touches (fetch, SSE
+  // ReadableStream, TextDecoder, AbortController, URLSearchParams) comes from the
+  // DOM lib. Mirrors targets/web/tsconfig.json.
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": []
+  },
+  "exclude": [],
+  "include": ["./**/*.ts"]
+}
