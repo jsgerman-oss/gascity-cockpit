@@ -32,6 +32,7 @@ import notificationsFeature from './notifications.feature.ts';
 import worktreeLensFeature from './worktreeLens.feature.ts';
 import telemetryFeature from './telemetry.feature.ts';
 import savedViewsFeature from './savedViews.feature.ts';
+import metricsFeature from './metrics.feature.ts';
 
 /** Every cockpit feature, in activation order. Append new features here. */
 export const FEATURES: readonly CockpitFeature[] = [
@@ -53,6 +54,7 @@ export const FEATURES: readonly CockpitFeature[] = [
   worktreeLensFeature,
   telemetryFeature,
   savedViewsFeature,
+  metricsFeature,
 ];
 
 /** Activate every registered feature against the shared host. */

@@ -1,0 +1,51 @@
+{
+  "views": {
+    "gascityCockpit": [
+      {
+        "id": "gascityCockpit.metrics",
+        "name": "Metrics",
+        "icon": "media/cockpit.svg",
+        "contextualTitle": "GasCity Metrics"
+      }
+    ]
+  },
+  "commands": [
+    {
+      "command": "gascityCockpit.metrics.refresh",
+      "title": "GasCity Cockpit: Refresh Metrics",
+      "category": "GasCity Cockpit",
+      "icon": "$(refresh)"
+    },
+    {
+      "command": "gascityCockpit.metrics.selectWindow",
+      "title": "GasCity Cockpit: Metrics Window…",
+      "category": "GasCity Cockpit",
+      "icon": "$(calendar)"
+    },
+    {
+      "command": "gascityCockpit.metrics.toggleGroupBy",
+      "title": "GasCity Cockpit: Metrics — Group by Rig or Agent",
+      "category": "GasCity Cockpit",
+      "icon": "$(list-tree)"
+    }
+  ],
+  "menus": {
+    "view/title": [
+      {
+        "command": "gascityCockpit.metrics.selectWindow",
+        "when": "view == gascityCockpit.metrics",
+        "group": "navigation@1"
+      },
+      {
+        "command": "gascityCockpit.metrics.toggleGroupBy",
+        "when": "view == gascityCockpit.metrics",
+        "group": "navigation@2"
+      },
+      {
+        "command": "gascityCockpit.metrics.refresh",
+        "when": "view == gascityCockpit.metrics",
+        "group": "navigation@3"
+      }
+    ]
+  }
+}

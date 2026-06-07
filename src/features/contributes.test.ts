@@ -130,6 +130,7 @@ describe("contributes manifests", () => {
       "gascityCockpit.events",
       "gascityCockpit.beads",
       "gascityCockpit.telemetry",
+      "gascityCockpit.metrics",
       "gascityCockpit.mergeQueue",
     ]);
   });

@@ -27,6 +27,7 @@ export const FEATURE_ORDER = [
   'status',
   'beads',
   'telemetry',
+  'metrics',
   'codeNav',
   'formulaFlows',
   'chat',
