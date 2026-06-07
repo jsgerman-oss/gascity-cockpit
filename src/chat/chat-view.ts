@@ -12,7 +12,7 @@ import * as vscode from "vscode";
 import * as path from "node:path";
 import { listCities, listSessions, type CockpitClient } from "../api/index.ts";
 import type { ApiEndpoint, ConnectionStatus, Logger } from "../discovery/index.ts";
-import { CONNECTING, emptyNotice, errorNotice, loadingNotice } from "../ui/index.ts";
+import { CONNECTING, connectivityOf, emptyNotice, loadingNotice, reconnectingNotice } from "../ui/index.ts";
 import { rankCitiesForPicker } from "./city-picker.ts";
 import { rankSessionsForChat } from "./session-picker.ts";
 import { ConversationStore, type ConversationState } from "./conversation-store.ts";
@@ -224,25 +224,32 @@ export class ChatViewProvider implements vscode.WebviewViewProvider, vscode.Disp
 
   private applyStatus(status: ConnectionStatus): void {
     if (this.disposed || !this.view) return;
-    const ep = status.endpoint;
-    if (status.state === "connected" && ep) {
-      const key = endpointKey(ep);
-      if (status.restarted || key !== this.endpointKey) {
+    if (status.state === "connected") {
+      const ep = status.endpoint;
+      if (ep && (status.restarted || endpointKey(ep) !== this.endpointKey)) {
         this.teardownStore();
         // A fresh/restarted supervisor: re-resolve the Mayor unless the operator
         // pinned a specific session.
         if (!this.explicitTarget) this.target = null;
         void this.ensureBound();
       }
-    } else if (status.state === "unavailable" || status.state === "idle") {
+      return;
+    }
+    // Not connected. Share the cross-pane vocabulary (cockpit-n5p) without the
+    // tree-row machine — the docked view's "content" is a live store, not rows.
+    if (connectivityOf(status.state) === "lost") {
+      // The supervisor dropped: tear down the now-dead conversation and show the
+      // shared reconnecting overlay (so a gc stop / restart reads as recovering,
+      // not a hard error). `connected` above rebinds when the link returns.
       this.teardownStore();
       this.endpointKey = null;
-      this.postNotice(
-        status.state === "unavailable"
-          ? errorNotice("the Mayor chat", "Supervisor API unavailable")
-          : loadingNotice(CONNECTING),
-      );
+      this.postNotice(reconnectingNotice(status.detail));
+      return;
     }
+    // The link is still coming up (or briefly not-ready). Don't tear down a live
+    // conversation over a transient blip; only fill an as-yet-unbound view with
+    // the shared connecting row.
+    if (!this.store) this.postNotice(loadingNotice(CONNECTING));
   }
 
   // ---- webview bridge ----------------------------------------------------

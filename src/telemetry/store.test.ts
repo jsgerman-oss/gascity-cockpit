@@ -148,6 +148,25 @@ describe('TelemetryStore', () => {
     expect(fires).toBe(1);
   });
 
+  it('tracks supervisor connectivity and re-renders only on a real change', () => {
+    const store = new TelemetryStore();
+    expect(store.state.connectivity).toBe('starting');
+    let fires = 0;
+    store.onDidChange(() => (fires += 1));
+
+    // No-op while it stays 'starting'.
+    store.setConnectivity('starting');
+    expect(fires).toBe(0);
+
+    store.setConnectivity('lost');
+    expect(store.state.connectivity).toBe('lost');
+    expect(fires).toBe(1);
+
+    // Idempotent: the same value does not re-fire.
+    store.setConnectivity('lost');
+    expect(fires).toBe(1);
+  });
+
   it('dispose tears down the change emitter so listeners stop firing', () => {
     const store = new TelemetryStore();
     let fires = 0;

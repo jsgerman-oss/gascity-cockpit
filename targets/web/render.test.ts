@@ -286,6 +286,7 @@ describe("renderTelemetryPane", () => {
       stream: null,
       evicted: false,
       anyCostMeasured: false,
+      connectivity: "live",
       ...over,
     };
   }

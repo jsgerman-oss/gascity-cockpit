@@ -7,6 +7,7 @@
 // label/description/number logic lives in the tested `format.ts`.
 import * as vscode from 'vscode';
 import type { Disposable } from '../discovery/index.ts';
+import { resolvePaneState, type StateNotice } from '../ui/index.ts';
 import {
   accessibleModelLabel,
   accessibleScopeLabel,
@@ -36,7 +37,23 @@ type TelemetryNode =
   | { kind: 'group'; group: ScopeGroup }
   | { kind: 'scope'; group: ScopeGroup; scope: ScopeRollup }
   | { kind: 'model'; group: ScopeGroup; parentKey: string; model: ModelRollup }
-  | { kind: 'notice'; id: string; label: string; description?: string; severity?: StatusKind };
+  // A notice either carries a `severity` (the domain advisories — "not yet
+  // instrumented", "older scopes dropped") rendered through the statusIcon ladder,
+  // or an explicit `icon`/`iconColor` from the shared cross-pane state machine
+  // (the connecting / reconnecting / empty rows). `getTreeItem` prefers the icon.
+  | { kind: 'notice'; id: string; label: string; description?: string; severity?: StatusKind; icon?: string; iconColor?: string };
+
+/** Map a shared {@link StateNotice} onto a telemetry notice row (cockpit-n5p). */
+function stateNoticeNode(notice: StateNotice): TelemetryNode {
+  return {
+    kind: 'notice',
+    id: `state-${notice.tone}`,
+    label: notice.label,
+    description: notice.detail,
+    icon: notice.icon,
+    iconColor: notice.iconColor,
+  };
+}
 
 function statusIcon(kind: StatusKind): vscode.ThemeIcon {
   switch (kind) {
@@ -96,12 +113,18 @@ export class TelemetryTreeProvider implements vscode.TreeDataProvider<TelemetryN
   private roots(state: TelemetryState): TelemetryNode[] {
     const roots: TelemetryNode[] = [];
     if (state.totals.operations === 0) {
-      roots.push({
-        kind: 'notice',
-        id: 'no-telemetry',
-        label: 'No worker operations observed yet',
-        description: 'streams from worker.operation events',
+      // No operations yet: let the shared state machine (cockpit-n5p) word it —
+      // "Connecting…" while the link comes up, "Reconnecting…" when it drops,
+      // and the pane's own "No worker operations observed yet" once it's live and
+      // genuinely quiet — instead of always claiming the fleet is idle.
+      const pane = resolvePaneState({
+        connectivity: state.connectivity,
+        loading: false,
+        hasContent: false,
+        resource: 'telemetry',
+        empty: { label: 'No worker operations observed yet', detail: 'streams from worker.operation events' },
       });
+      if (pane.kind === 'notice') roots.push(stateNoticeNode(pane.notice));
       return roots;
     }
     if (!state.anyCostMeasured) {
@@ -167,7 +190,11 @@ export class TelemetryTreeProvider implements vscode.TreeDataProvider<TelemetryN
         const item = new vscode.TreeItem(node.label, None);
         item.id = `notice:${node.id}`;
         if (node.description) item.description = node.description;
-        item.iconPath = statusIcon(node.severity ?? 'idle');
+        // Cross-pane state rows carry their own codicon/colour; the domain
+        // advisories fall back to the severity ladder.
+        item.iconPath = node.icon
+          ? new vscode.ThemeIcon(node.icon, node.iconColor ? new vscode.ThemeColor(node.iconColor) : undefined)
+          : statusIcon(node.severity ?? 'idle');
         item.contextValue = 'gascityTelemetryNotice';
         item.accessibilityInformation = {
           label: node.description ? `${node.label}, ${node.description}` : node.label,

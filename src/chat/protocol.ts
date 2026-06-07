@@ -28,13 +28,15 @@ export interface ChatPendingView {
 
 /**
  * A non-conversation overlay the chat surface shows instead of a transcript —
- * "connecting", "nothing here", or "load failed". Used by the docked Mayor chat
- * view (cockpit-dc8.1) before it is bound to a live session, so the pane never
- * ships blank. `tone` mirrors the shared {@link StateTone} vocabulary
- * (cockpit-1ll.19); `label`/`detail` carry the copy its helpers produce.
+ * "connecting", "nothing here", "load failed", or "reconnecting". Used by the
+ * docked Mayor chat view (cockpit-dc8.1) before it is bound to a live session, or
+ * when the supervisor drops out from under a bound one, so the pane never ships
+ * blank and a lost link reads as recovering rather than broken. `tone` mirrors
+ * the shared `StateTone` vocabulary (cockpit-1ll.19, cockpit-n5p); `label`/
+ * `detail` carry the copy its helpers produce.
  */
 export interface ChatNotice {
-  tone: "loading" | "empty" | "error";
+  tone: "loading" | "empty" | "error" | "reconnecting";
   label: string;
   detail?: string;
 }

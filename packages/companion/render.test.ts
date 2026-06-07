@@ -23,6 +23,7 @@ function state(overrides: Partial<core.status.FleetStatusState> = {}): core.stat
     eventStream: null,
     lastError: null,
     loading: false,
+    connectivity: "live",
     ...overrides,
   };
 }

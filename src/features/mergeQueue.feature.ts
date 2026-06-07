@@ -8,6 +8,7 @@
  * passes in, so routine health polls while connected don't reload the tree.
  */
 import { registerMergeQueue } from "../views/mergeQueue.ts";
+import { connectivityOf } from "../ui/index.ts";
 import type { CockpitFeature, FeatureHost } from "../host/index.ts";
 
 const mergeQueueFeature: CockpitFeature = {
@@ -17,6 +18,10 @@ const mergeQueueFeature: CockpitFeature = {
 
     host.context.subscriptions.push(
       host.onStatusChange((status, prevState) => {
+        // Surface the link state on every transition so a dropped supervisor
+        // shows the shared reconnecting row, then reload only on the meaningful
+        // transitions (first connect, restart, drop).
+        queue.setConnectivity(connectivityOf(status.state));
         const connected = status.state === "connected" && prevState !== "connected";
         const dropped = status.state === "unavailable" && prevState !== "unavailable";
         if (connected || dropped || status.restarted) queue.refresh();

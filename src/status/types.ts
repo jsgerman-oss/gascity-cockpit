@@ -5,6 +5,7 @@
 // event stream. Nothing here imports `vscode`; the editor glue (tree views)
 // adapts this model in `views.ts`.
 import type { Schema, SupervisorHealth } from '../api/index.ts';
+import type { Connectivity } from '../ui/index.ts';
 
 export type { SupervisorHealth };
 
@@ -78,7 +79,7 @@ export interface FleetStatusState {
   partialErrors: string[];
   /** SSE subscription status, or null before it starts. */
   eventStream: EventStreamStatus | null;
-  /** A fatal-ish error (e.g. snapshot failed / API unavailable), or null. */
+  /** A fatal-ish error (e.g. snapshot failed), or null. */
   lastError: string | null;
   /**
    * True between connecting to a supervisor and the first snapshot (or error)
@@ -86,4 +87,12 @@ export interface FleetStatusState {
    * "no cities" while the initial fetch is in flight (cockpit-1ll.16).
    */
   loading: boolean;
+  /**
+   * The supervisor link, projected from the connection manager (cockpit-n5p).
+   * Lets the panes degrade to a shared "reconnecting" row — instead of a frozen
+   * snapshot or a red "couldn't load" — when the API drops, and recover on their
+   * own when it returns. The "store-level offline flag" the cross-pane-states
+   * contract anticipated.
+   */
+  connectivity: Connectivity;
 }

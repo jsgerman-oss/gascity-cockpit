@@ -33,7 +33,30 @@ describe('FleetStatusStore', () => {
       eventStream: null,
       lastError: null,
       loading: false,
+      connectivity: 'starting',
     });
+  });
+
+  it('tracks supervisor connectivity and re-renders only on a real change', () => {
+    const store = new FleetStatusStore();
+    const listener = vi.fn();
+    store.onDidChange(listener);
+
+    // No-op while it stays 'starting' (a routine poll that doesn't move it).
+    store.setConnectivity('starting');
+    expect(listener).not.toHaveBeenCalled();
+
+    store.setConnectivity('lost');
+    expect(store.state.connectivity).toBe('lost');
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    // Idempotent: the same value does not re-fire.
+    store.setConnectivity('lost');
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    store.setConnectivity('live');
+    expect(store.state.connectivity).toBe('live');
+    expect(listener).toHaveBeenCalledTimes(2);
   });
 
   it('tracks the loading flag and clears it on a terminal transition', () => {

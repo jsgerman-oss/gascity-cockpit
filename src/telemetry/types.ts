@@ -13,6 +13,7 @@
 // moment the data lands. Model-advisor *tier decisions* are not in /v0 at all;
 // that gap is tracked by an upstream bead (see docs/cost-tier-telemetry.md).
 import type { Schema } from '../api/index.ts';
+import type { Connectivity } from '../ui/index.ts';
 
 /** The raw `worker.operation` payload as typed by the generated /v0 spec. */
 export type WorkerOperationPayload = Schema<'WorkerOperationEventPayload'>;
@@ -176,4 +177,10 @@ export interface TelemetryState {
    * shows the "awaiting upstream instrumentation" affordance.
    */
   anyCostMeasured: boolean;
+  /**
+   * The supervisor link, projected from the connection manager (cockpit-n5p).
+   * Lets the empty pane distinguish "connecting", "reconnecting" and a genuinely
+   * idle fleet, sharing the cross-pane state vocabulary with every other pane.
+   */
+  connectivity: Connectivity;
 }

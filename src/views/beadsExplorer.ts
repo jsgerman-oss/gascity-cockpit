@@ -36,7 +36,8 @@ import {
   type GroupNode,
   type MessageNode,
 } from "../beads/index.ts";
-import { errorNotice, loadingNotice, type StateNotice } from "../ui/index.ts";
+import { CITY_PLACEHOLDER } from "../cities/index.ts";
+import { resolvePaneState, type Connectivity, type StateNotice } from "../ui/index.ts";
 
 const VIEW_ID = "gascityCockpit.beads";
 const BEAD_SCHEME = "gascity-bead";
@@ -76,6 +77,8 @@ export interface BeadsExplorerDeps {
 export interface BeadsExplorerController {
   /** Reload from the API (call when the supervisor connects / restarts). */
   refresh(): void;
+  /** Track the supervisor link so the tree shows the shared reconnecting state. */
+  setConnectivity(connectivity: Connectivity): void;
 }
 
 // --- Tree data provider -----------------------------------------------------
@@ -84,9 +87,10 @@ class BeadsTreeDataProvider implements vscode.TreeDataProvider<BeadTreeNode> {
   private readonly emitter = new vscode.EventEmitter<void>();
   readonly onDidChangeTreeData = this.emitter.event;
 
-  private roots: BeadTreeNode[] = [noticeNode("loading", loadingNotice())];
+  private roots: BeadTreeNode[] = [];
   private data: ExplorerData | null = null;
   private lastError: string | null = null;
+  private connectivity: Connectivity = "starting";
   private spec: BeadViewSpec;
   private includeClosed: boolean;
   private hideOperational: boolean;
@@ -105,6 +109,20 @@ class BeadsTreeDataProvider implements vscode.TreeDataProvider<BeadTreeNode> {
         hideOperational: initial.hideOperational,
       },
     };
+    // Seed the first render from the shared state machine (a "Connecting…" row
+    // while the supervisor link comes up), so the explorer is never blank.
+    this.rebuild();
+  }
+
+  /**
+   * Track the supervisor link so the tree degrades to the shared "reconnecting"
+   * row — over its last-known beads — when the API drops, recovering on its own.
+   * Idempotent: a poll that doesn't move connectivity does not re-render.
+   */
+  setConnectivity(connectivity: Connectivity): void {
+    if (this.connectivity === connectivity) return;
+    this.connectivity = connectivity;
+    this.rebuild();
   }
 
   getTreeItem(node: BeadTreeNode): vscode.TreeItem {
@@ -196,10 +214,27 @@ class BeadsTreeDataProvider implements vscode.TreeDataProvider<BeadTreeNode> {
   }
 
   private rebuild(): void {
-    if (this.lastError) {
-      this.roots = [noticeNode("error", errorNotice("beads", this.lastError))];
-    } else if (this.data) {
-      this.roots = buildBeadTree(this.data, this.spec);
+    // Build the real tree only when there are cities to show; the shared state
+    // machine (cockpit-n5p) owns every "no content yet" case — first-load,
+    // empty, fetch error, and the reconnecting row when the supervisor drops —
+    // so the four states read the same here as in every other pane.
+    const tree =
+      this.data && this.data.cities.length > 0 ? buildBeadTree(this.data, this.spec) : [];
+    const pane = resolvePaneState({
+      connectivity: this.connectivity,
+      loading: this.data === null && this.lastError === null,
+      hasContent: tree.length > 0,
+      error: this.lastError,
+      resource: "beads",
+      empty: { label: CITY_PLACEHOLDER.noCities },
+    });
+    if (pane.kind === "notice") {
+      const row = noticeNode(`state-${pane.notice.tone}`, pane.notice);
+      // A lost link with beads in hand banners the reconnect *over* the stale
+      // rows; otherwise the notice stands in for the whole tree.
+      this.roots = pane.overlay ? [row, ...tree] : [row];
+    } else {
+      this.roots = tree;
     }
     this.emitter.fire();
   }
@@ -490,7 +525,10 @@ export function registerBeadsExplorer(
 
   // The extension drives the first (and every reconnect) refresh once the
   // supervisor connection reports an endpoint — see `activate`.
-  return { refresh: () => void provider.refresh() };
+  return {
+    refresh: () => void provider.refresh(),
+    setConnectivity: (connectivity) => provider.setConnectivity(connectivity),
+  };
 }
 
 function asBeadLeaf(node?: BeadTreeNode): BeadLeaf | null {

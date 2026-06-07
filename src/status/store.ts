@@ -5,6 +5,7 @@
 // to `onDidChange` and re-render from `state`. All mutation goes through methods
 // so the single change signal stays the only thing the glue must wire up.
 import { Emitter } from '../discovery/index.ts';
+import type { Connectivity } from '../ui/index.ts';
 import type {
   EventStreamStatus,
   FleetEvent,
@@ -26,6 +27,7 @@ function emptyState(): FleetStatusState {
     eventStream: null,
     lastError: null,
     loading: false,
+    connectivity: 'starting',
   };
 }
 
@@ -92,6 +94,18 @@ export class FleetStatusStore {
   setLoading(loading: boolean): void {
     if (this._state.loading === loading) return;
     this._state = { ...this._state, loading };
+    this.fire();
+  }
+
+  /**
+   * Track the supervisor link. The Fleet/Event panes read this to degrade to a
+   * shared "reconnecting" row when the API drops (keeping their stale rows under
+   * it) and recover when it returns. Idempotent — only a real change re-renders,
+   * so a routine health poll that doesn't move connectivity is silent.
+   */
+  setConnectivity(connectivity: Connectivity): void {
+    if (this._state.connectivity === connectivity) return;
+    this._state = { ...this._state, connectivity };
     this.fire();
   }
 

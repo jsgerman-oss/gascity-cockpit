@@ -25,14 +25,14 @@ import {
   entryDescription,
   entryLabel,
   entryTooltip,
-  loadErrorNode,
-  LOADING_MESSAGE,
   prRef,
   stateIcon,
   type MergeEntryNode,
+  type MergeMessageNode,
   type MergeQueueEntry,
   type MergeQueueNode,
 } from "../mergeQueue/index.ts";
+import { resolvePaneState, type Connectivity, type StateNotice } from "../ui/index.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -59,6 +59,8 @@ export interface MergeQueueDeps {
 export interface MergeQueueController {
   /** Reload the queue from the supervisor. */
   refresh(): void;
+  /** Track the supervisor link so the queue shows the shared reconnecting state. */
+  setConnectivity(connectivity: Connectivity): void;
 }
 
 // --- Tree provider ----------------------------------------------------------
@@ -67,12 +69,19 @@ class MergeQueueProvider implements vscode.TreeDataProvider<MergeQueueNode> {
   private readonly emitter = new vscode.EventEmitter<void>();
   readonly onDidChangeTreeData = this.emitter.event;
 
-  private roots: MergeQueueNode[] = [LOADING_MESSAGE];
+  private roots: MergeQueueNode[] = [];
+  private entries: MergeQueueEntry[] | null = null;
+  private lastError: string | null = null;
+  private connectivity: Connectivity = "starting";
 
   constructor(
     private readonly repository: BeadsRepository,
     private showMerged: boolean,
-  ) {}
+  ) {
+    // Seed the first render from the shared state machine (a "Connecting…" row),
+    // so the queue is never blank before the first load lands.
+    this.rebuild();
+  }
 
   getTreeItem(node: MergeQueueNode): vscode.TreeItem {
     return toTreeItem(node);
@@ -92,16 +101,55 @@ class MergeQueueProvider implements vscode.TreeDataProvider<MergeQueueNode> {
     this.showMerged = value;
   }
 
+  /**
+   * Track the supervisor link so a dropped API degrades the queue to the shared
+   * reconnecting row (over its last-known entries) and recovers on its own.
+   * Idempotent: a poll that doesn't move connectivity does not re-render.
+   */
+  setConnectivity(connectivity: Connectivity): void {
+    if (this.connectivity === connectivity) return;
+    this.connectivity = connectivity;
+    this.rebuild();
+  }
+
   async refresh(): Promise<void> {
     try {
       // Recently-merged beads are closed, so they only appear when we ask for
       // closed beads — that is exactly what the "show merged" toggle controls.
       const data = await this.repository.loadExplorer({ includeClosed: this.showMerged });
       const records = data.cities.flatMap((c) => c.records);
-      this.roots = buildQueueTree(deriveMergeQueue(records));
+      this.entries = deriveMergeQueue(records);
+      this.lastError = null;
     } catch (err) {
-      const detail = err instanceof BeadsApiError ? err.message : String(err);
-      this.roots = [loadErrorNode(detail)];
+      this.entries = null;
+      this.lastError = err instanceof BeadsApiError ? err.message : String(err);
+    }
+    this.rebuild();
+  }
+
+  private rebuild(): void {
+    // Group the entries only when there are some; the shared state machine
+    // (cockpit-n5p) owns the four "no content" states — the cheerful empty queue,
+    // a load error, the first-load spinner, and the reconnecting row when the
+    // supervisor drops — so they read the same as every other pane.
+    const tree = this.entries && this.entries.length > 0 ? buildQueueTree(this.entries) : [];
+    const pane = resolvePaneState({
+      connectivity: this.connectivity,
+      loading: this.entries === null && this.lastError === null,
+      hasContent: tree.length > 0,
+      error: this.lastError,
+      resource: "the merge queue",
+      empty: {
+        label: "Merge queue is empty",
+        detail: "Nothing is waiting on the refinery right now.",
+        icon: "check-all",
+      },
+    });
+    if (pane.kind === "notice") {
+      const row = stateRow(pane.notice);
+      this.roots = pane.overlay ? [row, ...tree] : [row];
+    } else {
+      this.roots = tree;
     }
     this.emitter.fire();
   }
@@ -109,6 +157,18 @@ class MergeQueueProvider implements vscode.TreeDataProvider<MergeQueueNode> {
   dispose(): void {
     this.emitter.dispose();
   }
+}
+
+/** Map a shared {@link StateNotice} onto a merge-queue message row. */
+function stateRow(notice: StateNotice): MergeMessageNode {
+  return {
+    kind: "message",
+    id: `state-${notice.tone}`,
+    label: notice.label,
+    detail: notice.detail,
+    icon: notice.icon,
+    iconColor: notice.iconColor,
+  };
 }
 
 function toTreeItem(node: MergeQueueNode): vscode.TreeItem {
@@ -334,7 +394,10 @@ export function registerMergeQueue(
   );
 
   void provider.refresh();
-  return { refresh: () => void provider.refresh() };
+  return {
+    refresh: () => void provider.refresh(),
+    setConnectivity: (connectivity) => provider.setConnectivity(connectivity),
+  };
 }
 
 async function pathExists(p: string): Promise<boolean> {

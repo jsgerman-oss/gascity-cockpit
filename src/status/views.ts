@@ -7,7 +7,7 @@
 // All label/description/severity logic lives in the tested `format.ts`.
 import * as vscode from 'vscode';
 import { CITY_PLACEHOLDER } from '../cities/index.ts';
-import { emptyNotice, errorNotice, loadingNotice, type StateNotice } from '../ui/index.ts';
+import { emptyNotice, resolvePaneState, type StateNotice } from '../ui/index.ts';
 import type { Disposable } from '../discovery/index.ts';
 import {
   accessibleAgentLabel,
@@ -94,21 +94,21 @@ export class FleetTreeProvider implements vscode.TreeDataProvider<FleetNode>, Di
     const { state } = this.store;
     if (!node) {
       const roots: FleetNode[] = [{ kind: 'supervisor' }];
-      if (state.lastError) {
-        // Worded and iconned like every other pane's load error (cockpit-1ll.19) —
-        // the raw cause rides along in the description.
-        roots.push(noticeNode('error', errorNotice('the fleet', state.lastError)));
-      }
+      // One shared decision (cockpit-n5p) picks the pane's state from its data +
+      // the live supervisor link: a first-load spinner, the empty "no cities"
+      // row, a load error, or — when the API drops — a "reconnecting" row layered
+      // over the last-known cities, which clears itself when the link returns. The
+      // supervisor row and the city rows always render; the notice rides with them.
+      const pane = resolvePaneState({
+        connectivity: state.connectivity,
+        loading: state.loading,
+        hasContent: state.cities.length > 0,
+        error: state.lastError,
+        resource: 'the fleet',
+        empty: { label: CITY_PLACEHOLDER.noCities },
+      });
+      if (pane.kind === 'notice') roots.push(noticeNode(`state:${pane.notice.tone}`, pane.notice));
       for (const city of state.cities) roots.push({ kind: 'city', city });
-      if (!state.cities.length && !state.lastError) {
-        // While the first snapshot is in flight, say so rather than claiming
-        // there are no cities (cockpit-1ll.16). Shared copy with the Beads pane.
-        roots.push(
-          state.loading
-            ? noticeNode('loading', loadingNotice())
-            : noticeNode('no-cities', emptyNotice(CITY_PLACEHOLDER.noCities)),
-        );
-      }
       for (const err of state.partialErrors) {
         roots.push({ kind: 'notice', id: `partial:${err}`, label: err, description: 'partial' });
       }
@@ -235,9 +235,23 @@ export class EventsTreeProvider implements vscode.TreeDataProvider<EventNode>, D
 
   getChildren(node?: EventNode): EventNode[] {
     if (node) return [];
-    const events = this.store.state.events;
-    if (!events.length) return [noticeNode('no-events', emptyNotice('No events yet'))];
-    return events.map((event) => ({ kind: 'event', event }));
+    const { state } = this.store;
+    // Same shared decision as the Fleet tree (cockpit-n5p): the feed shows its
+    // events when it has them, with a first-load / reconnecting row standing in
+    // (or, while the link is lost, riding above) instead of a bare "No events yet"
+    // that couldn't tell "quiet" from "disconnected".
+    const pane = resolvePaneState({
+      connectivity: state.connectivity,
+      loading: state.loading,
+      hasContent: state.events.length > 0,
+      error: state.lastError,
+      resource: 'the event feed',
+      empty: { label: 'No events yet' },
+    });
+    const rows: EventNode[] = [];
+    if (pane.kind === 'notice') rows.push(noticeNode(`state:${pane.notice.tone}`, pane.notice));
+    for (const event of state.events) rows.push({ kind: 'event', event });
+    return rows;
   }
 
   getTreeItem(node: EventNode): vscode.TreeItem {

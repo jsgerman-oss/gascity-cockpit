@@ -18,6 +18,7 @@ import {
   type TelemetryEndpoint,
 } from '../telemetry/index.ts';
 import { registerTelemetryViews } from '../views/telemetry.ts';
+import { connectivityOf } from '../ui/index.ts';
 import type { ConnectionStatus } from '../discovery/index.ts';
 import type { CockpitFeature, FeatureHost } from '../host/index.ts';
 
@@ -37,6 +38,9 @@ const telemetryFeature: CockpitFeature = {
 
     let liveKey: string | null = null;
     const applyTelemetry = (status: ConnectionStatus): void => {
+      // Surface the link state on every transition so a dropped supervisor shows
+      // the shared reconnecting row in the empty pane, recovering on reconnect.
+      store.setConnectivity(connectivityOf(status.state));
       const ep = status.endpoint;
       if (status.state === 'connected' && ep) {
         const key = `${ep.baseUrl}::${ep.token ?? ''}`;

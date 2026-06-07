@@ -7,6 +7,7 @@
 // contract gives us for "tier"). Token/cost fields are summed only when measured,
 // so the UI can distinguish "not instrumented yet" from "genuinely zero".
 import { Emitter } from '../discovery/index.ts';
+import type { Connectivity } from '../ui/index.ts';
 import {
   emptyTokenTotals,
   type ModelRollup,
@@ -177,6 +178,7 @@ export class TelemetryStore {
   private readonly grand: TelemetryTotals = emptyTotals();
   private stream: TelemetryStreamStatus | null = null;
   private evicted = false;
+  private connectivity: Connectivity = 'starting';
   /** Highest envelope seq applied; drops replays after a reconnect. */
   private maxSeq = -1;
 
@@ -220,6 +222,17 @@ export class TelemetryStore {
   /** Replace the SSE subscription status. */
   setStreamStatus(status: TelemetryStreamStatus): void {
     this.stream = status;
+    this.refresh();
+  }
+
+  /**
+   * Track the supervisor link so the empty pane shows the shared reconnecting
+   * row when the API drops (and recovers on its own). Idempotent — a routine
+   * poll that doesn't move connectivity does not re-render.
+   */
+  setConnectivity(connectivity: Connectivity): void {
+    if (this.connectivity === connectivity) return;
+    this.connectivity = connectivity;
     this.refresh();
   }
 
@@ -288,6 +301,7 @@ export class TelemetryStore {
       stream: this.stream,
       evicted: this.evicted,
       anyCostMeasured: this.grand.tokens.measuredOps > 0 || this.grand.costMeasuredOps > 0,
+      connectivity: this.connectivity,
     };
   }
 }

@@ -15,6 +15,7 @@ import {
   type StatusEndpoint,
 } from '../status/index.ts';
 import { registerStatusViews } from '../status/views.ts';
+import { connectivityOf } from '../ui/index.ts';
 import type { ConnectionStatus } from '../discovery/index.ts';
 import type { CockpitFeature, FeatureHost } from '../host/index.ts';
 
@@ -36,6 +37,11 @@ const statusFeature: CockpitFeature = {
 
     let liveKey: string | null = null;
     const applyLiveStatus = (status: ConnectionStatus): void => {
+      // Forward the link state first, on every transition: a dropped supervisor
+      // now degrades the Fleet/Event panes to a shared "reconnecting" row over
+      // their last-known rows — rather than clearing them to a hard error — and
+      // recovers on its own when the connection returns.
+      store.setConnectivity(connectivityOf(status.state));
       const ep = status.endpoint;
       if (status.state === 'connected' && ep) {
         const key = `${ep.baseUrl}::${ep.token ?? ''}`;
@@ -52,7 +58,6 @@ const statusFeature: CockpitFeature = {
           liveKey = null;
           live.disconnect();
         }
-        if (status.state === 'unavailable') store.clearSnapshot('Supervisor API unavailable');
       }
     };
 

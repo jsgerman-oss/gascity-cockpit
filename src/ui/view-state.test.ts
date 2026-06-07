@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   CONNECTING,
+  RECONNECTING,
   STATE_LOOK,
   emptyNotice,
   errorNotice,
   loadingNotice,
+  reconnectingNotice,
 } from "./view-state.ts";
 
 describe("STATE_LOOK", () => {
@@ -15,6 +17,15 @@ describe("STATE_LOOK", () => {
   it("wears the theme error colour for the error tone, a neutral dot for empty", () => {
     expect(STATE_LOOK.error).toEqual({ icon: "error", iconColor: "list.errorForeground" });
     expect(STATE_LOOK.empty).toEqual({ icon: "info" });
+  });
+
+  it("spins the sync glyph in the warning colour while reconnecting — distinct from loading and error", () => {
+    expect(STATE_LOOK.reconnecting).toEqual({ icon: "sync~spin", iconColor: "list.warningForeground" });
+    // The two spinners must not be confusable: a neutral first-load spinner vs a
+    // warning-tinted reconnect, so an operator can tell "still connecting" from
+    // "lost the link" at a glance.
+    expect(STATE_LOOK.reconnecting.icon).not.toBe(STATE_LOOK.loading.icon);
+    expect(STATE_LOOK.reconnecting.iconColor).not.toBe(STATE_LOOK.error.iconColor);
   });
 });
 
@@ -73,11 +84,41 @@ describe("errorNotice", () => {
   });
 });
 
+describe("reconnectingNotice", () => {
+  it("words a dropped link the same way everywhere, with the cause in the detail", () => {
+    expect(reconnectingNotice("health probe failed — retrying in 500ms (attempt 2)")).toEqual({
+      tone: "reconnecting",
+      label: RECONNECTING,
+      detail: "health probe failed — retrying in 500ms (attempt 2)",
+      icon: "sync~spin",
+      iconColor: "list.warningForeground",
+    });
+  });
+
+  it("still carries the warning spinner when there is no cause to show", () => {
+    expect(reconnectingNotice()).toEqual({
+      tone: "reconnecting",
+      label: RECONNECTING,
+      icon: "sync~spin",
+      iconColor: "list.warningForeground",
+    });
+  });
+
+  it("uses its own copy, distinct from the first-load connecting line", () => {
+    expect(RECONNECTING).not.toBe(CONNECTING);
+    expect(reconnectingNotice().label).toBe(RECONNECTING);
+  });
+});
+
 describe("the notice shape", () => {
   it("omits detail and iconColor when they do not apply (loading/empty)", () => {
     // A clean object — no `detail: undefined` / `iconColor: undefined` noise —
     // so a pane can spread it onto a tree node without carrying empty keys.
     expect(Object.keys(loadingNotice()).sort()).toEqual(["icon", "label", "tone"]);
     expect(Object.keys(emptyNotice("No cities")).sort()).toEqual(["icon", "label", "tone"]);
+  });
+
+  it("omits only detail when reconnecting (the tone always carries its warning colour)", () => {
+    expect(Object.keys(reconnectingNotice()).sort()).toEqual(["icon", "iconColor", "label", "tone"]);
   });
 });
