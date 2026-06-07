@@ -1,0 +1,34 @@
+{
+  "commands": [
+    {
+      "command": "gascityCockpit.savedViews.switch",
+      "title": "Switch Saved View…",
+      "category": "GasCity Views",
+      "icon": "$(layout)"
+    },
+    {
+      "command": "gascityCockpit.savedViews.save",
+      "title": "Save Current as Saved View…",
+      "category": "GasCity Views",
+      "icon": "$(save)"
+    },
+    {
+      "command": "gascityCockpit.savedViews.rename",
+      "title": "Rename Saved View…",
+      "category": "GasCity Views",
+      "icon": "$(edit)"
+    },
+    {
+      "command": "gascityCockpit.savedViews.delete",
+      "title": "Delete Saved View…",
+      "category": "GasCity Views",
+      "icon": "$(trash)"
+    },
+    {
+      "command": "gascityCockpit.savedViews.update",
+      "title": "Update Saved View to Current…",
+      "category": "GasCity Views",
+      "icon": "$(replace-all)"
+    }
+  ]
+}

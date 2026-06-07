@@ -54,7 +54,20 @@ const CMD = {
   openDetail: "gascityCockpit.beads.openDetail",
   showGraph: "gascityCockpit.beads.showGraph",
   copyId: "gascityCockpit.beads.copyId",
+  // Internal IPC commands (not contributed to package.json): the Saved Views
+  // feature reads the current grouping + filters and applies a saved view's
+  // selection, without reaching into this view's private state. See
+  // `../views/savedViews.ts`.
+  getViewState: "gascityCockpit.beads.getViewState",
+  applyViewState: "gascityCockpit.beads.applyViewState",
 } as const;
+
+/** The grouping + filter selection a saved view applies, sent over {@link CMD.applyViewState}. */
+export interface BeadViewState {
+  groupBy?: GroupKey;
+  /** Filter dimensions to apply; the global closed/operational toggles are preserved. */
+  filters?: Partial<BeadFilters>;
+}
 
 export interface BeadsExplorerDeps {
   repository: BeadsRepository;
@@ -131,6 +144,29 @@ class BeadsTreeDataProvider implements vscode.TreeDataProvider<BeadTreeNode> {
     this.spec = {
       ...this.spec,
       filters: { ...filters, includeClosed: this.includeClosed, hideOperational: this.hideOperational },
+    };
+    this.rebuild();
+  }
+
+  /** Read the current grouping + active filters (for the Saved Views feature to capture). */
+  getViewState(): BeadViewState {
+    return { groupBy: this.spec.groupBy, filters: { ...this.spec.filters } };
+  }
+
+  /**
+   * Apply a saved view's grouping + filter selection in one rebuild. The global
+   * closed/operational toggles are preserved (a view never silently flips them),
+   * and every dimension here filters the already-loaded records client-side, so
+   * this never needs a refetch. Omitting `groupBy` keeps the current grouping.
+   */
+  applyView(viewState: BeadViewState): void {
+    this.spec = {
+      groupBy: viewState.groupBy ?? this.spec.groupBy,
+      filters: {
+        ...viewState.filters,
+        includeClosed: this.includeClosed,
+        hideOperational: this.hideOperational,
+      },
     };
     this.rebuild();
   }
@@ -441,6 +477,13 @@ export function registerBeadsExplorer(
       if (!leaf) return;
       await vscode.env.clipboard.writeText(leaf.beadId);
       void vscode.window.showInformationMessage(`Copied ${leaf.beadId}`);
+    }),
+    vscode.commands.registerCommand(CMD.getViewState, () => provider.getViewState()),
+    vscode.commands.registerCommand(CMD.applyViewState, async (viewState?: BeadViewState) => {
+      if (!viewState) return;
+      provider.applyView(viewState);
+      if (viewState.groupBy) await context.globalState.update(STATE_GROUP_BY, viewState.groupBy);
+      syncMeta();
     }),
     { dispose: () => graphView.dispose() },
   );
