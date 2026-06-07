@@ -719,19 +719,19 @@
     "package": "vsce package --no-dependencies"
   },
   "dependencies": {
-    "openapi-fetch": "^0.13.5"
+    "openapi-fetch": "^0.17.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.17.0",
-    "@types/node": "^22.10.0",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.9.2",
     "@types/vscode": "^1.90.0",
     "@vscode/vsce": "^3.2.0",
-    "esbuild": "^0.25.0",
-    "eslint": "^9.17.0",
+    "esbuild": "^0.28.0",
+    "eslint": "^10.4.1",
     "openapi-typescript": "^7.13.0",
-    "typescript": "^5.7.2",
+    "typescript": "^6.0.3",
     "typescript-eslint": "^8.18.0",
-    "vitest": "^2.1.8",
-    "@vitest/coverage-v8": "^2.1.8"
+    "vitest": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.8"
   }
 }
