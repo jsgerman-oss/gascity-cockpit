@@ -10,7 +10,13 @@
  */
 import * as vscode from 'vscode';
 import { randomBytes } from 'node:crypto';
-import { buildTimelineView, renderTimeTravelHtml, type EventTimeline } from '../timetravel/index.ts';
+import {
+  buildTimelineView,
+  captureTimelineScenario,
+  renderTimeTravelHtml,
+  serializeScenario,
+  type EventTimeline,
+} from '../timetravel/index.ts';
 import type { FleetEvent } from '../status/index.ts';
 
 const OPEN_COMMAND = 'gascityCockpit.timeTravel.open';
@@ -36,6 +42,11 @@ function makeNonce(): string {
   let out = '';
   for (const byte of randomBytes(32)) out += alphabet[byte % alphabet.length];
   return out;
+}
+
+/** Turn a scenario name into a safe lowercase-kebab filename stem. */
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'replay';
 }
 
 /**
@@ -86,6 +97,59 @@ class TimeTravelPanel {
     } else if (msg.type === 'copy' && typeof msg.text === 'string') {
       void vscode.env.clipboard.writeText(msg.text);
       void vscode.window.showInformationMessage('Event copied to clipboard.');
+    } else if (msg.type === 'saveScenario') {
+      void this.saveScenario();
+    }
+  }
+
+  /**
+   * Capture the live recording as a replay-to-regression scenario and write it to
+   * a JSON fixture the operator chooses. The capture + serialization is the
+   * tested `../timetravel` core; this method is only the editor-bound prompt/save
+   * flow. Defaults the save location to the repo's `src/timetravel/scenarios/`
+   * (where the regression suite loads them) when a workspace is open.
+   */
+  private async saveScenario(): Promise<void> {
+    if (this.timeline.size === 0) {
+      void vscode.window.showInformationMessage('No events recorded yet — nothing to save as a scenario.');
+      return;
+    }
+    const bounds = this.timeline.bounds();
+    const suggested = bounds ? `replay-seq${bounds.firstSeq}-${bounds.lastSeq}` : 'replay';
+    const name = await vscode.window.showInputBox({
+      title: 'Save replay as regression scenario',
+      prompt: 'Name this scenario — its stable identity in the regression suite.',
+      value: suggested,
+      validateInput: (v) => (v.trim().length === 0 ? 'Enter a non-empty name.' : undefined),
+    });
+    if (name === undefined) return; // cancelled
+
+    const scenario = captureTimelineScenario(this.timeline, name.trim(), {
+      capturedAt: new Date().toISOString(),
+    });
+    const json = serializeScenario(scenario);
+
+    const fileName = `${slugify(name.trim())}.scenario.json`;
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    const defaultUri = folder
+      ? vscode.Uri.joinPath(folder.uri, 'src', 'timetravel', 'scenarios', fileName)
+      : vscode.Uri.file(fileName);
+    const target = await vscode.window.showSaveDialog({
+      title: 'Save replay scenario',
+      defaultUri,
+      filters: { 'Replay scenario': ['json'] },
+    });
+    if (!target) return; // cancelled
+
+    try {
+      await vscode.workspace.fs.writeFile(target, new TextEncoder().encode(json));
+      void vscode.window.showInformationMessage(
+        `Saved replay scenario "${scenario.name}" (${scenario.expected.rows.length} events). Add it to src/timetravel/scenarios/index.ts to run it in the regression suite.`,
+      );
+    } catch (err) {
+      void vscode.window.showErrorMessage(
+        `Failed to save replay scenario: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 

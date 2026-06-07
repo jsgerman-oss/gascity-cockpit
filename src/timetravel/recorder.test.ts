@@ -88,6 +88,33 @@ describe('EventTimeline', () => {
     expect(row.message).toBe('boom');
   });
 
+  it('exposes its capacity so a capture can replay with the same cap', () => {
+    expect(new EventTimeline(7).capacity).toBe(7);
+    expect(new EventTimeline().capacity).toBe(1000); // TIMELINE_CAP default
+  });
+
+  it('events() returns the raw chronological window as a detached copy', () => {
+    const tl = new EventTimeline();
+    tl.record(event(1));
+    tl.record(event(2));
+    const exported = tl.events();
+    expect(exported.map((e) => e.seq)).toEqual([1, 2]);
+    // Mutating the returned array must not disturb the recording (it's a copy).
+    exported.push(event(99));
+    expect(tl.size).toBe(2);
+    expect(tl.events().map((e) => e.seq)).toEqual([1, 2]);
+  });
+
+  it('events() reflects de-dup and cap, matching what snapshot() projects', () => {
+    const tl = new EventTimeline(2);
+    tl.record(event(1));
+    tl.record(event(2));
+    tl.record(event(2)); // duplicate seq — dropped
+    tl.record(event(3)); // overflows the cap-2 ring — evicts seq 1
+    expect(tl.events().map((e) => e.seq)).toEqual([2, 3]);
+    expect(tl.snapshot().rows.map((r) => r.seq)).toEqual([2, 3]);
+  });
+
   it('stops firing after dispose', () => {
     const tl = new EventTimeline();
     const listener = vi.fn();

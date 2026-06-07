@@ -34,6 +34,7 @@ time you open it there is history to scrub.
 | **Play / Pause** | Replay forward from the playhead; from the live edge it replays from the start |
 | **Speed** | 0.5× / 1× / 2× / 4× replay cadence |
 | **Copy event** | Copy the current event (seq, time, type, city, actor, subject, message) to the clipboard |
+| **Save scenario** | Save the whole recording as a replay-to-regression scenario fixture (see below) |
 
 The **live** badge shows when the playhead is at the latest event; while it is, new
 events follow automatically. Scrub back and the panel holds your position while the
@@ -53,9 +54,11 @@ src/timetravel/
   recorder.ts   EventTimeline — chronological, de-duped, capped recording + onDidRecord
   view.ts       buildTimelineView() — events → serializable rows (reuses feed presentation)
   webview.ts    renderTimeTravelHtml() — the CSP-locked scrubber document (pure string)
+  scenario.ts   capture/run/serialize replay-to-regression scenarios (cockpit-6x0)
+  scenarios/    committed *.scenario.json fixtures + the loader barrel
   index.ts      barrel
 src/views/
-  timeTravel.ts   the WebviewPanel glue: posts rows in, forwards live appends, copy
+  timeTravel.ts   the WebviewPanel glue: posts rows in, forwards live appends, copy, save
 ```
 
 `EventTimeline` is the audit recorder: it keeps events in **chronological** order
@@ -80,6 +83,31 @@ connection buys a purpose-built recorder (chronological, larger-capped) without
 reaching into another feature's private store. The stream tears down on disconnect
 and reconnects on a restart or endpoint change; `liveKey` dedupes the connected
 endpoint so routine health polls don't churn it.
+
+## Replay-to-regression scenarios
+
+A recorded run is also a test fixture. **Save scenario** (cockpit-6x0) freezes the
+current recording — the raw event sequence *and* the exact derived state the
+recorder produced from it — into a JSON file under `src/timetravel/scenarios/`. A
+runner (`runScenario`) replays the events back through a fresh `EventTimeline` and
+asserts the derived state has not drifted, turning a captured incident into a
+regression test for the recorder (de-dup, cap eviction) and the feed projection.
+
+Capture and replay share one code path — `captureScenario` derives the expected
+snapshot, `runScenario` re-derives and compares — so a freshly captured scenario
+always passes. The regression value comes from the committed `expected` being
+*frozen*: if the recorder or projection later changes the state a real run
+derives, the runner re-derives a different snapshot and the frozen expectation no
+longer matches. That drift is caught by `scenario.regression.test.ts`, which
+replays every committed fixture.
+
+Three scenarios ship today, each guarding a distinct recorder behaviour:
+`incident-replay` (a crash→escalation→drain→restart run — ordering and the
+ok/warn/error severity tints), `reconnect-dedup` (a reconnect re-delivering the
+cursor-boundary event — monotonic-seq de-dup), and `ring-overflow` (more events
+than the cap — eviction of the oldest). To add one: click **Save scenario**, drop
+the JSON in `src/timetravel/scenarios/`, and append it to that folder's `index.ts`
+(it is validated on load).
 
 ## Registration
 

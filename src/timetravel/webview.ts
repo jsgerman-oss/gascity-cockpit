@@ -144,6 +144,7 @@ export function renderTimeTravelHtml(options: TimeTravelHtmlOptions): string {
       </label>
       <span class="live" id="live" hidden>live</span>
       <span class="spacer"></span>
+      <button id="save-scenario" class="secondary" aria-label="Save replay as regression scenario" title="Save the recorded replay as a regression scenario">Save scenario</button>
       <button id="copy" class="secondary" aria-label="Copy current event" title="Copy the current event to the clipboard">Copy event</button>
     </div>
     <input type="range" id="scrub" min="0" max="0" value="0" step="1" aria-label="Event timeline scrubber" disabled />
@@ -164,7 +165,7 @@ export function renderTimeTravelHtml(options: TimeTravelHtmlOptions): string {
         list: byId('events'), empty: byId('empty'),
         play: byId('play'), stepBack: byId('step-back'), stepFwd: byId('step-fwd'),
         toStart: byId('to-start'), toLive: byId('to-live'), speed: byId('speed'),
-        copy: byId('copy'), live: byId('live'),
+        copy: byId('copy'), saveScenario: byId('save-scenario'), live: byId('live'),
       };
 
       let rows = [];
@@ -232,6 +233,9 @@ export function renderTimeTravelHtml(options: TimeTravelHtmlOptions): string {
         els.toStart.disabled = playhead <= 0;
         els.toLive.disabled = atLive();
         els.copy.disabled = !cur;
+        // Saving needs a recording, not a playhead position — enabled whenever
+        // there is anything to capture, independent of where the scrubber sits.
+        els.saveScenario.disabled = n === 0;
         els.status.textContent = playing ? 'Replaying…'
           : n === 0 ? 'Waiting for events…'
           : atLive() ? 'At live edge' : 'Scrubbing history';
@@ -294,6 +298,11 @@ export function renderTimeTravelHtml(options: TimeTravelHtmlOptions): string {
       els.copy.addEventListener('click', function () {
         const cur = currentRow();
         if (cur) vscode.postMessage({ type: 'copy', text: formatEvent(cur) });
+      });
+      els.saveScenario.addEventListener('click', function () {
+        // The host owns the recording and the capture/serialize/save flow; the
+        // webview just asks for it. No playhead is sent — the whole window saves.
+        if (count() > 0) vscode.postMessage({ type: 'saveScenario' });
       });
 
       window.addEventListener('message', function (event) {

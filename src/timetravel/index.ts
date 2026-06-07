@@ -15,3 +15,18 @@ export type {
 export { EventTimeline, TIMELINE_CAP } from './recorder.ts';
 export { buildTimelineView } from './view.ts';
 export { escapeHtml, renderTimeTravelHtml, type TimeTravelHtmlOptions } from './webview.ts';
+
+export {
+  captureScenario,
+  captureTimelineScenario,
+  coerceScenario,
+  diffSnapshots,
+  parseScenario,
+  runScenario,
+  SCENARIO_FORMAT_VERSION,
+  serializeScenario,
+  type CaptureOptions,
+  type ReplayScenario,
+  type ScenarioDrift,
+} from './scenario.ts';
+export { SAVED_SCENARIOS } from './scenarios/index.ts';

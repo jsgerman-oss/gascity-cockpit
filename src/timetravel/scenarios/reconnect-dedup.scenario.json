@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "name": "reconnect-dedup",
+  "description": "A reconnect re-delivers the cursor-boundary event (duplicate seq 12). Guards the monotonic-seq de-dup: the duplicate is stored in events but must be absent from the derived state.",
+  "capturedAt": "2026-06-06T19:00:10Z",
+  "cap": 1000,
+  "events": [
+    {
+      "seq": 10,
+      "type": "city.updated",
+      "ts": "2026-06-06T19:00:00Z",
+      "actor": "controller",
+      "city": "blackrim-hq"
+    },
+    {
+      "seq": 11,
+      "type": "session.updated",
+      "ts": "2026-06-06T19:00:02Z",
+      "actor": "gastown.furiosa",
+      "city": "blackrim-hq"
+    },
+    {
+      "seq": 12,
+      "type": "session.updated",
+      "ts": "2026-06-06T19:00:04Z",
+      "actor": "gastown.furiosa",
+      "city": "blackrim-hq",
+      "message": "tick"
+    },
+    {
+      "seq": 12,
+      "type": "session.updated",
+      "ts": "2026-06-06T19:00:04Z",
+      "actor": "gastown.furiosa",
+      "city": "blackrim-hq",
+      "message": "tick"
+    },
+    {
+      "seq": 13,
+      "type": "bead.updated",
+      "ts": "2026-06-06T19:00:09Z",
+      "actor": "gastown.furiosa",
+      "city": "blackrim-hq",
+      "subject": "cockpit-6x0"
+    }
+  ],
+  "expected": {
+    "rows": [
+      {
+        "seq": 10,
+        "type": "city.updated",
+        "ts": "2026-06-06T19:00:00Z",
+        "actor": "controller",
+        "city": "blackrim-hq",
+        "subject": "",
+        "message": "",
+        "label": "city.updated",
+        "desc": "blackrim-hq · controller",
+        "kind": "ok"
+      },
+      {
+        "seq": 11,
+        "type": "session.updated",
+        "ts": "2026-06-06T19:00:02Z",
+        "actor": "gastown.furiosa",
+        "city": "blackrim-hq",
+        "subject": "",
+        "message": "",
+        "label": "session.updated",
+        "desc": "blackrim-hq · gastown.furiosa",
+        "kind": "ok"
+      },
+      {
+        "seq": 12,
+        "type": "session.updated",
+        "ts": "2026-06-06T19:00:04Z",
+        "actor": "gastown.furiosa",
+        "city": "blackrim-hq",
+        "subject": "",
+        "message": "tick",
+        "label": "session.updated",
+        "desc": "blackrim-hq · gastown.furiosa · tick",
+        "kind": "ok"
+      },
+      {
+        "seq": 13,
+        "type": "bead.updated",
+        "ts": "2026-06-06T19:00:09Z",
+        "actor": "gastown.furiosa",
+        "city": "blackrim-hq",
+        "subject": "cockpit-6x0",
+        "message": "",
+        "label": "bead.updated",
+        "desc": "blackrim-hq · gastown.furiosa · cockpit-6x0",
+        "kind": "ok"
+      }
+    ],
+    "bounds": {
+      "count": 4,
+      "firstSeq": 10,
+      "lastSeq": 13,
+      "firstTs": "2026-06-06T19:00:00Z",
+      "lastTs": "2026-06-06T19:00:09Z"
+    }
+  }
+}

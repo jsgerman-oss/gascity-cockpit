@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "name": "incident-replay",
+  "description": "A dispatch→run→crash→escalation→drain→restart incident. Guards the recorder ordering and the feed projection (label/desc/severity tint) across ok/warn/error event types.",
+  "capturedAt": "2026-06-06T18:08:01Z",
+  "cap": 1000,
+  "events": [
+    {
+      "seq": 1,
+      "type": "session.created",
+      "ts": "2026-06-06T18:00:00Z",
+      "actor": "controller",
+      "city": "blackrim-hq",
+      "subject": "gastown.furiosa"
+    },
+    {
+      "seq": 2,
+      "type": "session.updated",
+      "ts": "2026-06-06T18:00:04Z",
+      "actor": "gastown.furiosa",
+      "city": "blackrim-hq",
+      "message": "claimed cockpit-6x0"
+    },
+    {
+      "seq": 3,
+      "type": "bead.updated",
+      "ts": "2026-06-06T18:00:05Z",
+      "actor": "gastown.furiosa",
+      "city": "blackrim-hq",
+      "subject": "cockpit-6x0",
+      "message": "in_progress"
+    },
+    {
+      "seq": 4,
+      "type": "session.crashed",
+      "ts": "2026-06-06T18:07:11Z",
+      "actor": "gastown.furiosa",
+      "city": "blackrim-hq",
+      "message": "context exhausted"
+    },
+    {
+      "seq": 5,
+      "type": "agent.stalled",
+      "ts": "2026-06-06T18:07:30Z",
+      "actor": "gastown.witness",
+      "city": "blackrim-hq",
+      "subject": "gastown.furiosa",
+      "message": "unresponsive"
+    },
+    {
+      "seq": 6,
+      "type": "session.drain",
+      "ts": "2026-06-06T18:07:45Z",
+      "actor": "controller",
+      "city": "blackrim-hq",
+      "message": "draining stalled session"
+    },
+    {
+      "seq": 7,
+      "type": "session.created",
+      "ts": "2026-06-06T18:08:00Z",
+      "actor": "controller",
+      "city": "blackrim-hq",
+      "subject": "gastown.furiosa",
+      "message": "restarted from context"
+    }
+  ],
+  "expected": {
+    "rows": [
+      {
+        "seq": 1,
+        "type": "session.created",
+        "ts": "2026-06-06T18:00:00Z",
+        "actor": "controller",
+        "city": "blackrim-hq",
+        "subject": "gastown.furiosa",
+        "message": "",
+        "label": "session.created",
+        "desc": "blackrim-hq · controller · gastown.furiosa",
+        "kind": "ok"
+      },
+      {
+        "seq": 2,
+        "type": "session.updated",
+        "ts": "2026-06-06T18:00:04Z",
+        "actor": "gastown.furiosa",
+        "city": "blackrim-hq",
+        "subject": "",
+        "message": "claimed cockpit-6x0",
+        "label": "session.updated",
+        "desc": "blackrim-hq · gastown.furiosa · claimed cockpit-6x0",
+        "kind": "ok"
+      },
+      {
+        "seq": 3,
+        "type": "bead.updated",
+        "ts": "2026-06-06T18:00:05Z",
+        "actor": "gastown.furiosa",
+        "city": "blackrim-hq",
+        "subject": "cockpit-6x0",
+        "message": "in_progress",
+        "label": "bead.updated",
+        "desc": "blackrim-hq · gastown.furiosa · in_progress",
+        "kind": "ok"
+      },
+      {
+        "seq": 4,
+        "type": "session.crashed",
+        "ts": "2026-06-06T18:07:11Z",
+        "actor": "gastown.furiosa",
+        "city": "blackrim-hq",
+        "subject": "",
+        "message": "context exhausted",
+        "label": "session.crashed",
+        "desc": "blackrim-hq · gastown.furiosa · context exhausted",
+        "kind": "error"
+      },
+      {
+        "seq": 5,
+        "type": "agent.stalled",
+        "ts": "2026-06-06T18:07:30Z",
+        "actor": "gastown.witness",
+        "city": "blackrim-hq",
+        "subject": "gastown.furiosa",
+        "message": "unresponsive",
+        "label": "agent.stalled",
+        "desc": "blackrim-hq · gastown.witness · unresponsive",
+        "kind": "error"
+      },
+      {
+        "seq": 6,
+        "type": "session.drain",
+        "ts": "2026-06-06T18:07:45Z",
+        "actor": "controller",
+        "city": "blackrim-hq",
+        "subject": "",
+        "message": "draining stalled session",
+        "label": "session.drain",
+        "desc": "blackrim-hq · controller · draining stalled session",
+        "kind": "warn"
+      },
+      {
+        "seq": 7,
+        "type": "session.created",
+        "ts": "2026-06-06T18:08:00Z",
+        "actor": "controller",
+        "city": "blackrim-hq",
+        "subject": "gastown.furiosa",
+        "message": "restarted from context",
+        "label": "session.created",
+        "desc": "blackrim-hq · controller · restarted from context",
+        "kind": "ok"
+      }
+    ],
+    "bounds": {
+      "count": 7,
+      "firstSeq": 1,
+      "lastSeq": 7,
+      "firstTs": "2026-06-06T18:00:00Z",
+      "lastTs": "2026-06-06T18:08:00Z"
+    }
+  }
+}

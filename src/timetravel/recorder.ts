@@ -15,7 +15,7 @@ export const TIMELINE_CAP = 1000;
 
 export class EventTimeline {
   /** Recorded events in chronological (ascending seq) order. */
-  private events: FleetEvent[] = [];
+  private buffer: FleetEvent[] = [];
   /** Highest seq seen, used to drop events re-delivered across a reconnect. */
   private maxSeq: number | null = null;
   private readonly recorded = new Emitter<FleetEvent>();
@@ -28,7 +28,22 @@ export class EventTimeline {
 
   /** Number of events currently retained. */
   get size(): number {
-    return this.events.length;
+    return this.buffer.length;
+  }
+
+  /** The retention cap in force, so a capture can record it and replay faithfully. */
+  get capacity(): number {
+    return this.cap;
+  }
+
+  /**
+   * A shallow copy of the recorded events in chronological order. Unlike
+   * {@link snapshot}, which projects to webview rows, this is the raw event
+   * sequence — what a replay scenario serializes so a runner can re-derive the
+   * snapshot and assert no drift. Returns a copy so callers can't mutate the ring.
+   */
+  events(): FleetEvent[] {
+    return this.buffer.slice();
   }
 
   /**
@@ -40,8 +55,8 @@ export class EventTimeline {
   record(event: FleetEvent): void {
     if (this.maxSeq !== null && event.seq <= this.maxSeq) return;
     this.maxSeq = event.seq;
-    this.events.push(event);
-    if (this.events.length > this.cap) this.events.shift();
+    this.buffer.push(event);
+    if (this.buffer.length > this.cap) this.buffer.shift();
     this.recorded.fire(event);
   }
 
@@ -50,17 +65,17 @@ export class EventTimeline {
    * seq counter resets — mixing the two epochs would corrupt ordering/de-dup.
    */
   clear(): void {
-    this.events = [];
+    this.buffer = [];
     this.maxSeq = null;
   }
 
   /** Time/sequence span of the recording, or null when empty. */
   bounds(): TimelineBounds | null {
-    if (this.events.length === 0) return null;
-    const first = this.events[0];
-    const last = this.events[this.events.length - 1];
+    if (this.buffer.length === 0) return null;
+    const first = this.buffer[0];
+    const last = this.buffer[this.buffer.length - 1];
     return {
-      count: this.events.length,
+      count: this.buffer.length,
       firstSeq: first.seq,
       lastSeq: last.seq,
       firstTs: first.ts,
@@ -70,7 +85,7 @@ export class EventTimeline {
 
   /** A point-in-time copy (projected rows + bounds) for a freshly opened panel. */
   snapshot(): TimelineSnapshot {
-    return { rows: buildTimelineView(this.events), bounds: this.bounds() };
+    return { rows: buildTimelineView(this.buffer), bounds: this.bounds() };
   }
 
   dispose(): void {

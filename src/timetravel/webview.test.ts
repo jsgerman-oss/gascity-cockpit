@@ -40,6 +40,12 @@ describe('renderTimeTravelHtml', () => {
     expect(html).toContain("type: 'copy'");
   });
 
+  it('offers a save-scenario control that asks the host to capture the replay', () => {
+    expect(html).toContain('id="save-scenario"');
+    expect(html).toContain('aria-label="Save replay as regression scenario"');
+    expect(html).toContain("type: 'saveScenario'");
+  });
+
   it('escapes the title in the document', () => {
     const evil = renderTimeTravelHtml({ nonce: 'n', cspSource: 's', title: '<script>evil</script>' });
     expect(evil).not.toContain('<script>evil</script>');

@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "name": "ring-overflow",
+  "description": "Seven events recorded into a cap-4 ring. Guards eviction: the derived window retains only the four newest events (seq 4–7); the oldest three fall off.",
+  "capturedAt": "2026-06-06T20:00:07Z",
+  "cap": 4,
+  "events": [
+    {
+      "seq": 1,
+      "type": "session.updated",
+      "ts": "2026-06-06T20:00:00Z",
+      "actor": "gastown.furiosa",
+      "city": "blackrim-hq",
+      "message": "step 1"
+    },
+    {
+      "seq": 2,
+      "type": "session.updated",
+      "ts": "2026-06-06T20:00:01Z",
+      "actor": "gastown.furiosa",
+      "city": "blackrim-hq",
+      "message": "step 2"
+    },
+    {
+      "seq": 3,
+      "type": "session.updated",
+      "ts": "2026-06-06T20:00:02Z",
+      "actor": "gastown.furiosa",
+      "city": "blackrim-hq",
+      "message": "step 3"
+    },
+    {
+      "seq": 4,
+      "type": "session.updated",
+      "ts": "2026-06-06T20:00:03Z",
+      "actor": "gastown.furiosa",
+      "city": "blackrim-hq",
+      "message": "step 4"
+    },
+    {
+      "seq": 5,
+      "type": "session.updated",
+      "ts": "2026-06-06T20:00:04Z",
+      "actor": "gastown.furiosa",
+      "city": "blackrim-hq",
+      "message": "step 5"
+    },
+    {
+      "seq": 6,
+      "type": "session.updated",
+      "ts": "2026-06-06T20:00:05Z",
+      "actor": "gastown.furiosa",
+      "city": "blackrim-hq",
+      "message": "step 6"
+    },
+    {
+      "seq": 7,
+      "type": "session.updated",
+      "ts": "2026-06-06T20:00:06Z",
+      "actor": "gastown.furiosa",
+      "city": "blackrim-hq",
+      "message": "step 7"
+    }
+  ],
+  "expected": {
+    "rows": [
+      {
+        "seq": 4,
+        "type": "session.updated",
+        "ts": "2026-06-06T20:00:03Z",
+        "actor": "gastown.furiosa",
+        "city": "blackrim-hq",
+        "subject": "",
+        "message": "step 4",
+        "label": "session.updated",
+        "desc": "blackrim-hq · gastown.furiosa · step 4",
+        "kind": "ok"
+      },
+      {
+        "seq": 5,
+        "type": "session.updated",
+        "ts": "2026-06-06T20:00:04Z",
+        "actor": "gastown.furiosa",
+        "city": "blackrim-hq",
+        "subject": "",
+        "message": "step 5",
+        "label": "session.updated",
+        "desc": "blackrim-hq · gastown.furiosa · step 5",
+        "kind": "ok"
+      },
+      {
+        "seq": 6,
+        "type": "session.updated",
+        "ts": "2026-06-06T20:00:05Z",
+        "actor": "gastown.furiosa",
+        "city": "blackrim-hq",
+        "subject": "",
+        "message": "step 6",
+        "label": "session.updated",
+        "desc": "blackrim-hq · gastown.furiosa · step 6",
+        "kind": "ok"
+      },
+      {
+        "seq": 7,
+        "type": "session.updated",
+        "ts": "2026-06-06T20:00:06Z",
+        "actor": "gastown.furiosa",
+        "city": "blackrim-hq",
+        "subject": "",
+        "message": "step 7",
+        "label": "session.updated",
+        "desc": "blackrim-hq · gastown.furiosa · step 7",
+        "kind": "ok"
+      }
+    ],
+    "bounds": {
+      "count": 4,
+      "firstSeq": 4,
+      "lastSeq": 7,
+      "firstTs": "2026-06-06T20:00:03Z",
+      "lastTs": "2026-06-06T20:00:06Z"
+    }
+  }
+}
