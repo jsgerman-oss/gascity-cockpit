@@ -15,7 +15,13 @@
 // `mount` to `innerHTML` lives in main.ts. Every collaborator is an injectable
 // seam defaulting to the real `core`, mirroring how `LiveStatus` injects its own.
 import * as core from "../../src/core/index.ts";
-import { type PaneId, renderEventsPane, renderHealthPane } from "./render.ts";
+import {
+  type PaneId,
+  renderAgentsPane,
+  renderEventsPane,
+  renderHealthPane,
+  renderSessionsPane,
+} from "./render.ts";
 
 export type { PaneId };
 
@@ -91,6 +97,8 @@ export function createCompanionApp(deps: CompanionAppDeps): CompanionApp {
 
   function render(state: core.status.FleetStatusState): void {
     deps.mount("health", renderHealthPane(state));
+    deps.mount("agents", renderAgentsPane(state));
+    deps.mount("sessions", renderSessionsPane(state));
     deps.mount("events", renderEventsPane(state));
   }
 

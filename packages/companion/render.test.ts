@@ -8,8 +8,10 @@ import {
   escapeHtml,
   formatClock,
   noticeHtml,
+  renderAgentsPane,
   renderEventsPane,
   renderHealthPane,
+  renderSessionsPane,
 } from "./render.ts";
 
 function state(overrides: Partial<core.status.FleetStatusState> = {}): core.status.FleetStatusState {
@@ -38,8 +40,11 @@ const HEALTH = {
 
 const ALPHA = { name: "alpha", running: true } as core.status.CityInfo;
 const BETA = { name: "beta", running: false } as core.status.CityInfo;
+const GAMMA = { name: "gamma", running: true } as core.status.CityInfo;
 const AGENT = { name: "furiosa", state: "idle", running: false, available: true } as core.status.AgentResponse;
+const AGENT2 = { name: "max", state: "busy", running: true, available: true } as core.status.AgentResponse;
 const SESSION = { id: "s1", state: "running", running: true } as core.status.SessionResponse;
+const SESSION2 = { id: "s2", state: "idle", running: false } as core.status.SessionResponse;
 
 function event(overrides: Partial<core.status.FleetEvent> = {}): core.status.FleetEvent {
   return { seq: 1, type: "session.updated", ts: "2026-06-06T19:00:00Z", actor: "furiosa", city: "alpha", ...overrides };
@@ -128,6 +133,103 @@ describe("renderHealthPane", () => {
     const html = renderHealthPane(state({ cities: [ALPHA], partialErrors: ["agents[alpha]: timeout"] }));
     expect(html).toContain("partial");
     expect(html).toContain("agents[alpha]: timeout");
+  });
+});
+
+describe("renderAgentsPane", () => {
+  it("shows the shared connecting row while loading", () => {
+    const html = renderAgentsPane(state({ loading: true }));
+    expect(html).toContain("notice--loading");
+    expect(html).toContain("Connecting to supervisor…");
+  });
+
+  it("shows a consistent error notice scoped to agents when a fatal error is set", () => {
+    const html = renderAgentsPane(state({ lastError: "boom" }));
+    expect(html).toContain("notice--error");
+    expect(html).toContain("Couldn&#39;t load agents.");
+    expect(html).toContain("boom");
+  });
+
+  it("treats zero cities with partial errors as an error, not 'no agents'", () => {
+    const html = renderAgentsPane(state({ partialErrors: ["agents: Network error"] }));
+    expect(html).toContain("notice--error");
+    expect(html).toContain("agents: Network error");
+  });
+
+  it("shows the empty notice when cities are up but register no agents", () => {
+    const html = renderAgentsPane(state({ cities: [ALPHA], agentsByCity: {} }));
+    expect(html).toContain("notice--empty");
+    expect(html).toContain("No agents");
+  });
+
+  it("renders a flat agent list with status dots and no city tag for a single city", () => {
+    const html = renderAgentsPane(state({ cities: [ALPHA], agentsByCity: { alpha: [AGENT] } }));
+    expect(html).toContain("furiosa");
+    expect(html).toContain("dot--idle");
+    expect(html).not.toContain("row__city"); // single city → no per-row city tag
+  });
+
+  it("tags each row with its city when the fleet spans more than one city", () => {
+    const html = renderAgentsPane(
+      state({ cities: [ALPHA, GAMMA], agentsByCity: { alpha: [AGENT], gamma: [AGENT2] } }),
+    );
+    expect(html).toContain("row__city");
+    expect(html).toContain("furiosa");
+    expect(html).toContain("max");
+    expect(html).toContain(">alpha<");
+    expect(html).toContain(">gamma<");
+    expect(html).toContain("dot--busy"); // max is running
+  });
+
+  it("surfaces partial errors as a banner alongside the agents that did load", () => {
+    const html = renderAgentsPane(
+      state({ cities: [ALPHA], agentsByCity: { alpha: [AGENT] }, partialErrors: ["agents[beta]: timeout"] }),
+    );
+    expect(html).toContain("partial");
+    expect(html).toContain("agents[beta]: timeout");
+    expect(html).toContain("furiosa");
+  });
+});
+
+describe("renderSessionsPane", () => {
+  it("shows the shared connecting row while loading", () => {
+    const html = renderSessionsPane(state({ loading: true }));
+    expect(html).toContain("notice--loading");
+    expect(html).toContain("Connecting to supervisor…");
+  });
+
+  it("shows a consistent error notice scoped to sessions when a fatal error is set", () => {
+    const html = renderSessionsPane(state({ lastError: "boom" }));
+    expect(html).toContain("notice--error");
+    expect(html).toContain("Couldn&#39;t load sessions.");
+    expect(html).toContain("boom");
+  });
+
+  it("shows the empty notice when cities are up but have no live sessions", () => {
+    const html = renderSessionsPane(state({ cities: [ALPHA], sessionsByCity: {} }));
+    expect(html).toContain("notice--empty");
+    expect(html).toContain("No sessions");
+  });
+
+  it("renders a flat session list with status dots and no city tag for a single city", () => {
+    const html = renderSessionsPane(state({ cities: [ALPHA], sessionsByCity: { alpha: [SESSION] } }));
+    expect(html).toContain("s1");
+    expect(html).toContain("dot--busy"); // s1 is running
+    expect(html).not.toContain("row__city");
+    // The dedicated Sessions pane does not dim its rows the way the Health pane does.
+    expect(html).not.toContain("rows--sessions");
+  });
+
+  it("tags each row with its city when the fleet spans more than one city", () => {
+    const html = renderSessionsPane(
+      state({ cities: [ALPHA, GAMMA], sessionsByCity: { alpha: [SESSION], gamma: [SESSION2] } }),
+    );
+    expect(html).toContain("row__city");
+    expect(html).toContain("s1");
+    expect(html).toContain("s2");
+    expect(html).toContain(">alpha<");
+    expect(html).toContain(">gamma<");
+    expect(html).toContain("dot--idle"); // s2 is idle
   });
 });
 

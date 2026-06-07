@@ -29,6 +29,8 @@ function main(): void {
 
   const bodies: Record<PaneId, HTMLElement> = {
     health: paneBody("health"),
+    agents: paneBody("agents"),
+    sessions: paneBody("sessions"),
     events: paneBody("events"),
   };
 

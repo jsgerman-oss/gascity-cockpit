@@ -64,8 +64,8 @@ function urlOf(input: RequestInfo | URL): URL {
 
 /**
  * A mock `/v0` server as a `fetch`. `mode: "ok"` serves one running city with an
- * agent and an SSE stream that emits a single event; `mode: "down"` 500s every
- * call. `counts` lets a test see how often an endpoint was hit (for refresh).
+ * agent, a session, and an SSE stream that emits a single event; `mode: "down"`
+ * 500s every call. `counts` lets a test see how often an endpoint was hit (for refresh).
  */
 function mockV0(mode: "ok" | "down" = "ok") {
   const counts: Record<string, number> = {};
@@ -85,7 +85,9 @@ function mockV0(mode: "ok" | "down" = "ok") {
     if (path.endsWith("/agents")) {
       return json({ items: [{ name: "furiosa", state: "idle", running: false, available: true }] });
     }
-    if (path.endsWith("/sessions")) return json({ items: [] });
+    if (path.endsWith("/sessions")) {
+      return json({ items: [{ id: "s1", state: "running", running: true }] });
+    }
     if (path === "/v0/events/stream") {
       const evt = { seq: 1, type: "session.updated", ts: "2026-06-06T19:00:00Z", actor: "furiosa", city: "alpha" };
       const body = `id: 1\nevent: message\ndata: ${JSON.stringify(evt)}\n\n`;
@@ -130,7 +132,7 @@ describe("createCompanionApp", () => {
     expect(typeof app.dispose).toBe("function");
   });
 
-  it("renders live city health from a mock /v0 over the real client + store (smoke)", async () => {
+  it("renders live city health, agents, and sessions from a mock /v0 over the real client + store (smoke)", async () => {
     const rec = recorder();
     const v0 = mockV0("ok");
     vi.stubGlobal("fetch", v0.fetch);
@@ -139,12 +141,18 @@ describe("createCompanionApp", () => {
       // typed client, and SupervisorEventStream — only the transport is a mock.
       const app = createCompanionApp({ endpoint: { baseUrl: "http://mock" }, mount: rec.mount });
       app.start();
-      // Loading is mounted synchronously, before any fetch resolves.
+      // Loading is mounted synchronously on every snapshot pane, before any fetch resolves.
       expect(rec.last.health).toContain("notice--loading");
+      expect(rec.last.agents).toContain("notice--loading");
+      expect(rec.last.sessions).toContain("notice--loading");
 
       await vi.waitFor(() => expect(rec.last.health).toContain("alpha"));
       expect(rec.last.health).toContain("Supervisor — ok");
       expect(rec.last.health).toContain("furiosa");
+      // The dedicated read surfaces render live off the same store + client: the
+      // Agents pane lists the city's agent, the Sessions pane its session.
+      expect(rec.last.agents).toContain("furiosa");
+      expect(rec.last.sessions).toContain("s1");
       expect(v0.counts["/v0/cities"]).toBeGreaterThanOrEqual(1);
       app.dispose();
     } finally {

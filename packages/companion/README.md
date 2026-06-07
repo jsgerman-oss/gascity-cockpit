@@ -1,23 +1,28 @@
 # GasCity Cockpit — Web Companion
 
-> Status: **scaffold** (`cockpit-tzy`) — the first slice of the companion epic
-> ([`cockpit-gj9`](../../docs/companion-surfaces.md)). A standalone, read-only web
-> companion built on the **same** typed `/v0` client and live domain store as the
-> VS Code extension — imported, never forked.
+> Status: **core read surfaces** (`cockpit-c2o`, on the `cockpit-tzy` scaffold) —
+> a slice of the companion epic ([`cockpit-gj9`](../../docs/companion-surfaces.md)).
+> A standalone, read-only web companion built on the **same** typed `/v0` client
+> and live domain store as the VS Code extension — imported, never forked.
 
-This is the foundation the rest of the companion epic builds on (core read
-surfaces, chat + approvals, responsive/mobile, hosting). It deliberately starts
-minimal: two live panes over the supervisor's `/v0` API.
+This is the foundation the rest of the companion epic builds on (chat + approvals,
+responsive/mobile, hosting). It presents four live read surfaces over the
+supervisor's `/v0` API:
 
 | Pane | Source (reused from `src/core`) | Liveness |
 |---|---|---|
-| **City Health** | `core.status.LiveStatus` → `fetchFleetSnapshot` (supervisor health, cities, agents, sessions) | snapshot, auto-refreshed on every status-affecting event |
+| **City Health** | `core.status.LiveStatus` → `fetchFleetSnapshot` (supervisor health and cities, each city's agents & sessions nested) | snapshot, auto-refreshed on every status-affecting event |
+| **Agents** | the same snapshot, flattened fleet-wide through the `core.status.agentLabel` / `agentStatusKind` formatters the editor's Fleet tree uses | snapshot, auto-refreshed |
+| **Sessions** | the same snapshot, flattened fleet-wide through the `core.status.sessionLabel` / `sessionStatusKind` formatters | snapshot, auto-refreshed |
 | **Event Feed** | the same `core.status.SupervisorEventStream` over the `/v0/events/stream` **SSE** feed, buffered in `FleetStatusStore` | live (event-sourced) |
 
-Both panes read one `core.status.FleetStatusStore` — the extension's own live
+Every pane reads one `core.status.FleetStatusStore` — the extension's own live
 status model — so the companion and the editor's Fleet pane render the same data,
-the same way, with the same loading / empty / error / reconnecting states (the
-shared `src/ui` cross-pane vocabulary).
+the same way, with the same loading / empty / error states (the shared `src/ui`
+cross-pane vocabulary). The Agents and Sessions panes are the entity-centric
+counterpart to the city-centric Health pane: one scannable fleet-wide column each,
+tagged by city when more than one is registered, instead of rows nested under
+every city.
 
 ## Files
 

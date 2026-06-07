@@ -286,6 +286,16 @@ button:focus-visible {
   color: var(--mute);
 }
 
+/* The city a fleet-wide Agents/Sessions row belongs to, pushed to the row's end. */
+.row__city {
+  margin-left: auto;
+  padding-left: 0.5rem;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--mute);
+  white-space: nowrap;
+}
+
 /* --- partial errors --- */
 .partial {
   display: flex;

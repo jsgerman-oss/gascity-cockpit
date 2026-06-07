@@ -18,8 +18,8 @@ import {
   loadingNotice,
 } from "../../src/ui/index.ts";
 
-/** The two read-only surfaces this first companion slice renders. */
-export type PaneId = "health" | "events";
+/** The read-only surfaces the companion renders. */
+export type PaneId = "health" | "agents" | "sessions" | "events";
 
 /** Escape the five HTML-significant characters; every dynamic string passes through here. */
 export function escapeHtml(value: string): string {
@@ -151,12 +151,129 @@ export function renderHealthPane(state: core.status.FleetStatusState): string {
     )
     .join("");
 
-  const partial = state.partialErrors.length
-    ? `<div class="partial" role="status"><span class="partial__glyph" aria-hidden="true">!</span>` +
-      `<ul class="partial__list">${state.partialErrors.map((e) => `<li>${escapeHtml(e)}</li>`).join("")}</ul></div>`
-    : "";
+  const partial = partialBannerHtml(state.partialErrors);
 
   return `${header}${partial}<div class="cities">${cities}</div>`;
+}
+
+// ---- agents & sessions (fleet-wide read surfaces) --------------------------
+
+/** The shared "some calls failed but others loaded" banner; "" when there are none. */
+function partialBannerHtml(partialErrors: string[]): string {
+  if (!partialErrors.length) return "";
+  return (
+    `<div class="partial" role="status"><span class="partial__glyph" aria-hidden="true">!</span>` +
+    `<ul class="partial__list">${partialErrors.map((e) => `<li>${escapeHtml(e)}</li>`).join("")}</ul></div>`
+  );
+}
+
+/**
+ * Flatten a city-keyed map (agentsByCity / sessionsByCity) into a single
+ * fleet-wide list in city order, tagging each item with the city it came from.
+ * The dedicated Agents / Sessions panes are the entity-centric counterpart to
+ * the city-centric Health pane: one scannable column across the whole fleet
+ * instead of rows nested two levels deep under each city.
+ */
+function flattenByCity<T>(
+  cities: core.status.CityInfo[],
+  byCity: Record<string, T[]>,
+): Array<{ city: string; item: T }> {
+  const rows: Array<{ city: string; item: T }> = [];
+  for (const city of cities) {
+    for (const item of byCity[city.name] ?? []) rows.push({ city: city.name, item });
+  }
+  return rows;
+}
+
+/** A right-aligned city tag for a fleet-wide row; only shown when the fleet has more than one city. */
+function cityTagHtml(city: string, show: boolean): string {
+  return show ? `<span class="row__city">${escapeHtml(city)}</span>` : "";
+}
+
+function agentFlatRowHtml(city: string, agent: core.status.AgentResponse, showCity: boolean): string {
+  return (
+    `<li class="row">${dot(core.status.agentStatusKind(agent))}` +
+    `<span class="row__label">${escapeHtml(core.status.agentLabel(agent))}</span>` +
+    `<span class="row__detail">${escapeHtml(core.status.agentDescription(agent))}</span>` +
+    `${cityTagHtml(city, showCity)}</li>`
+  );
+}
+
+function sessionFlatRowHtml(city: string, session: core.status.SessionResponse, showCity: boolean): string {
+  return (
+    `<li class="row">${dot(core.status.sessionStatusKind(session))}` +
+    `<span class="row__label">${escapeHtml(core.status.sessionLabel(session))}</span>` +
+    `<span class="row__detail">${escapeHtml(core.status.sessionDescription(session))}</span>` +
+    `${cityTagHtml(city, showCity)}</li>`
+  );
+}
+
+/**
+ * The loading / error / empty ladder the snapshot-backed panes share, mapped
+ * onto the cross-pane notice vocabulary exactly as renderHealthPane does: a
+ * first load in flight is the shared connecting row; a fatal error is the shared
+ * "Couldn't load <resource>" row; and once the snapshot has landed, no rows
+ * means either a genuinely empty fleet (the empty row) or — when the supervisor
+ * was unreachable and every call failed — an error carrying the partial-failure
+ * detail (cockpit-1ll.16: never a misleading "nothing here" for a dead API).
+ *
+ * Returns the notice HTML to render *instead of* content, or null when the pane
+ * has rows to show. The companion drives this off `loading`/`lastError`, not
+ * `connectivity`: LiveStatus — unlike the editor's ConnectionManager — does not
+ * project connectivity into the store, so the canonical resolvePaneState machine
+ * cannot be used here; this mirrors the scaffold's health ladder instead.
+ */
+function snapshotNotice(
+  state: core.status.FleetStatusState,
+  resource: string,
+  hasRows: boolean,
+  empty: { label: string; detail?: string },
+): string | null {
+  if (state.loading) return noticeHtml(loadingNotice());
+  if (state.lastError) return noticeHtml(errorNotice(resource, state.lastError));
+  if (hasRows) return null;
+  return state.partialErrors.length
+    ? noticeHtml(errorNotice(resource, state.partialErrors.join(" · ")))
+    : noticeHtml(emptyNotice(empty.label, empty.detail));
+}
+
+/**
+ * The Agents pane body: every agent across the fleet as one flat list, in city
+ * order, each row carrying the shared status dot + the same agent
+ * label/description formatters the editor's Fleet tree uses. Loading / error /
+ * empty come from {@link snapshotNotice}; a city tag distinguishes agents when
+ * more than one city is registered.
+ */
+export function renderAgentsPane(state: core.status.FleetStatusState): string {
+  const rows = flattenByCity(state.cities, state.agentsByCity);
+  const notice = snapshotNotice(state, "agents", rows.length > 0, {
+    label: "No agents",
+    detail: "Agents appear here as the fleet registers them.",
+  });
+  if (notice) return notice;
+
+  const showCity = state.cities.length > 1;
+  const list = `<ul class="rows">${rows.map(({ city, item }) => agentFlatRowHtml(city, item, showCity)).join("")}</ul>`;
+  return `${partialBannerHtml(state.partialErrors)}${list}`;
+}
+
+/**
+ * The Sessions pane body: every live session across the fleet as one flat list,
+ * the session-centric counterpart to the Agents pane. Same shared formatters,
+ * dots, and loading / error / empty vocabulary; sessions are not dimmed here (in
+ * the Health pane they sit secondary under each city's agents).
+ */
+export function renderSessionsPane(state: core.status.FleetStatusState): string {
+  const rows = flattenByCity(state.cities, state.sessionsByCity);
+  const notice = snapshotNotice(state, "sessions", rows.length > 0, {
+    label: "No sessions",
+    detail: "Live sessions appear here as agents start work.",
+  });
+  if (notice) return notice;
+
+  const showCity = state.cities.length > 1;
+  const list = `<ul class="rows">${rows.map(({ city, item }) => sessionFlatRowHtml(city, item, showCity)).join("")}</ul>`;
+  return `${partialBannerHtml(state.partialErrors)}${list}`;
 }
 
 // ---- event feed ------------------------------------------------------------
