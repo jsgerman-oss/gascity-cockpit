@@ -13,12 +13,18 @@
  * restart — both are good moments to re-check the local Ghostex daemon.
  */
 import { registerGhostexExplorer } from '../views/ghostexExplorer.ts';
+import { registerGhostexCommands } from '../views/ghostexCommands.ts';
 import type { CockpitFeature, FeatureHost } from '../host/index.ts';
 
 const ghostexFeature: CockpitFeature = {
   id: 'ghostex',
   activate(host: FeatureHost): void {
     const view = registerGhostexExplorer(host);
+
+    // The session-driving commands (create / attach / send / read / lifecycle).
+    // They build their own `gx` client per invocation, so they work as soon as
+    // gxserver is reachable — independent of the supervisor connection.
+    registerGhostexCommands(host);
 
     // Load the gxserver snapshot once on activation so the tree is meaningful
     // before any supervisor event fires.
