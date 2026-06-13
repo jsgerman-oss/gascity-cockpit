@@ -1,0 +1,87 @@
+{
+  "viewsContainers": {
+    "activitybar": [
+      {
+        "id": "gascityCockpitGhostex",
+        "title": "Ghostex",
+        "icon": "media/cockpit.svg"
+      }
+    ]
+  },
+  "views": {
+    "gascityCockpitGhostex": [
+      {
+        "id": "gascityCockpitGhostex.sessions",
+        "name": "Sessions",
+        "icon": "media/cockpit.svg",
+        "contextualTitle": "Ghostex Sessions"
+      }
+    ]
+  },
+  "commands": [
+    {
+      "command": "gascityCockpit.ghostex.refresh",
+      "title": "Refresh Ghostex",
+      "category": "Ghostex",
+      "icon": "$(refresh)"
+    },
+    {
+      "command": "gascityCockpit.ghostex.checkConnection",
+      "title": "Ghostex: Check gxserver Connection",
+      "category": "Ghostex",
+      "icon": "$(plug)"
+    },
+    {
+      "command": "gascityCockpit.ghostex.showOutput",
+      "title": "Ghostex: Show Output",
+      "category": "Ghostex",
+      "icon": "$(output)"
+    }
+  ],
+  "menus": {
+    "view/title": [
+      {
+        "command": "gascityCockpit.ghostex.refresh",
+        "when": "view == gascityCockpitGhostex.sessions",
+        "group": "navigation@1"
+      },
+      {
+        "command": "gascityCockpit.ghostex.checkConnection",
+        "when": "view == gascityCockpitGhostex.sessions",
+        "group": "navigation@2"
+      }
+    ]
+  },
+  "configuration": {
+    "title": "GasCity Cockpit",
+    "properties": {
+      "gascityCockpit.ghostex.gxPath": {
+        "type": "string",
+        "default": "gx",
+        "markdownDescription": "Path to the Ghostex `gx` CLI binary. Default `gx` (resolved on `PATH`). Set an absolute path if `gx` is not on the editor's `PATH`."
+      },
+      "gascityCockpit.ghostex.gxserverUrl": {
+        "type": "string",
+        "default": "",
+        "markdownDescription": "Base URL of the gxserver RPC daemon (e.g. `http://127.0.0.1:58744`). Leave empty to use the documented local default. Overrides discovery."
+      },
+      "gascityCockpit.ghostex.gxserverToken": {
+        "type": "string",
+        "default": "",
+        "markdownDescription": "Bearer token for gxserver, sent as `Authorization: Bearer <token>`. Leave empty to read it from `~/.ghostex/gxserver/auth/token`."
+      },
+      "gascityCockpit.ghostex.pollSeconds": {
+        "type": "number",
+        "default": 10,
+        "minimum": 2,
+        "markdownDescription": "How often (seconds) to re-probe gxserver `/api/health` for liveness while the Ghostex view is in use."
+      },
+      "gascityCockpit.ghostex.reconnectBackoffMs": {
+        "type": "number",
+        "default": 500,
+        "minimum": 50,
+        "markdownDescription": "Base delay (ms) for exponential backoff when reconnecting the gxserver `/api/events` WebSocket. The ceiling is fixed at 15s."
+      }
+    }
+  }
+}
