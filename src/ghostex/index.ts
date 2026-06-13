@@ -142,3 +142,47 @@ export {
   type UpdateBeadAction,
   type UpdateBoardAction,
 } from './boardSync.ts';
+
+// The state-sync (agents bridge) surface shares two names with boardSync —
+// `reconcile` and `DEFAULT_LINK_KEYS` — but they are different operations over
+// different data (session activity/lifecycle vs. bead⇄board items). boardSync's
+// names are already the public barrel surface, so the state-sync variants are
+// re-exported under disambiguated aliases. Direct importers of './stateSync.ts'
+// keep the original names.
+export {
+  correlateFleetAndGhostex,
+  DEFAULT_CWD_KEYS,
+  DEFAULT_LINK_KEYS as DEFAULT_SESSION_LINK_KEYS,
+  DEFAULT_RECONCILE_POLICY,
+  detectCompletion,
+  gascityActivityToGhostex,
+  gascityFleetToGhostex,
+  gascityLifecycleToGhostex,
+  gascitySessionCwd,
+  gascitySessionLink,
+  ghostexActivityToGascity,
+  ghostexLifecycleToGascity,
+  ghostexSessionToFleetActivity,
+  isAgentCompleted,
+  normalizeCwd,
+  projectGascitySessionToGhostex,
+  reconcile as reconcileSessionState,
+  type BridgedSession,
+  type BridgeOptions,
+  type BridgeResult,
+  type BridgeVia,
+  type CompletionSignal,
+  type CorrelationKeyOptions,
+  type FleetActivityOverlay,
+  type GascityActivity,
+  type GascityActivityInput,
+  type GascityAgentLike,
+  type GascityFleetLike,
+  type GascityLifecycleInput,
+  type GascityLiveness,
+  type GascityOnlySession,
+  type GascitySessionLike,
+  type GascityToGhostexOptions,
+  type ReconcilePolicy,
+  type SessionStateSnapshot,
+} from './stateSync.ts';

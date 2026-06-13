@@ -33,4 +33,15 @@ test('the ghostex barrel re-exports the public foundation surface', () => {
   assert.equal(typeof ghostex.formatReport, 'function');
   assert.equal(typeof ghostex.defaultBoardStatusMapping.boardToBead, 'function');
   assert.deepEqual(ghostex.DEFAULT_CONFLICT_POLICY, { title: 'lastWriter', status: 'lastWriter' });
+
+  // State-sync (agents bridge) surface. `reconcile` and `DEFAULT_LINK_KEYS`
+  // collide with boardSync, so they are re-exported under disambiguated aliases.
+  assert.equal(typeof ghostex.gascityFleetToGhostex, 'function');
+  assert.equal(typeof ghostex.ghostexSessionToFleetActivity, 'function');
+  assert.equal(typeof ghostex.correlateFleetAndGhostex, 'function');
+  assert.equal(typeof ghostex.reconcileSessionState, 'function');
+  assert.equal(typeof ghostex.detectCompletion, 'function');
+  assert.ok(Array.isArray(ghostex.DEFAULT_SESSION_LINK_KEYS));
+  assert.equal(ghostex.DEFAULT_RECONCILE_POLICY.activity, 'ghostex');
+  assert.equal(ghostex.DEFAULT_RECONCILE_POLICY.lifecycle, 'gascity');
 });
