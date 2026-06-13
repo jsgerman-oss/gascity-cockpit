@@ -324,6 +324,60 @@
         "icon": "$(output)"
       },
       {
+        "command": "gascityCockpit.ghostex.session.copyRef",
+        "title": "Ghostex: Copy Session Reference",
+        "category": "Ghostex",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "gascityCockpit.ghostex.session.focus",
+        "title": "Ghostex: Focus Session",
+        "category": "Ghostex",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "gascityCockpit.ghostex.session.read",
+        "title": "Ghostex: Read Session Output",
+        "category": "Ghostex",
+        "icon": "$(book)"
+      },
+      {
+        "command": "gascityCockpit.ghostex.session.send",
+        "title": "Ghostex: Send Text to Session…",
+        "category": "Ghostex",
+        "icon": "$(comment)"
+      },
+      {
+        "command": "gascityCockpit.ghostex.session.sleep",
+        "title": "Ghostex: Sleep Session",
+        "category": "Ghostex",
+        "icon": "$(debug-pause)"
+      },
+      {
+        "command": "gascityCockpit.ghostex.session.wake",
+        "title": "Ghostex: Wake Session",
+        "category": "Ghostex",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "gascityCockpit.ghostex.session.kill",
+        "title": "Ghostex: Stop Session",
+        "category": "Ghostex",
+        "icon": "$(stop-circle)"
+      },
+      {
+        "command": "gascityCockpit.ghostex.project.newSession",
+        "title": "Ghostex: New Terminal Session",
+        "category": "Ghostex",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "gascityCockpit.ghostex.project.newAgentSession",
+        "title": "Ghostex: New Agent Session",
+        "category": "Ghostex",
+        "icon": "$(hubot)"
+      },
+      {
         "command": "gascityCockpit.notifications.showPending",
         "title": "GasCity Cockpit: Show Pending Approvals",
         "category": "GasCity Cockpit",
@@ -587,6 +641,61 @@
           "command": "gascityCockpit.mergeQueue.copyBranch",
           "when": "view == gascityCockpit.mergeQueue && viewItem =~ /^mergeEntry/",
           "group": "2_meta@1"
+        },
+        {
+          "command": "gascityCockpit.ghostex.project.newSession",
+          "when": "view == gascityCockpitGhostex.sessions && viewItem == ghostexProject",
+          "group": "inline@1"
+        },
+        {
+          "command": "gascityCockpit.ghostex.project.newSession",
+          "when": "view == gascityCockpitGhostex.sessions && viewItem == ghostexProject",
+          "group": "1_new@1"
+        },
+        {
+          "command": "gascityCockpit.ghostex.project.newAgentSession",
+          "when": "view == gascityCockpitGhostex.sessions && viewItem == ghostexProject",
+          "group": "1_new@2"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.focus",
+          "when": "view == gascityCockpitGhostex.sessions && viewItem =~ /^ghostexSession\\./",
+          "group": "1_session@1"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.read",
+          "when": "view == gascityCockpitGhostex.sessions && viewItem =~ /^ghostexSession\\./",
+          "group": "1_session@2"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.send",
+          "when": "view == gascityCockpitGhostex.sessions && viewItem =~ /^ghostexSession\\./",
+          "group": "1_session@3"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.copyRef",
+          "when": "view == gascityCockpitGhostex.sessions && viewItem =~ /^ghostexSession\\./",
+          "group": "1_session@4"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.copyRef",
+          "when": "view == gascityCockpitGhostex.sessions && viewItem =~ /^ghostexSession\\./",
+          "group": "inline@1"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.sleep",
+          "when": "view == gascityCockpitGhostex.sessions && viewItem =~ /\\.running$/",
+          "group": "2_lifecycle@1"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.wake",
+          "when": "view == gascityCockpitGhostex.sessions && viewItem =~ /\\.(sleeping|stopped|missing)$/",
+          "group": "2_lifecycle@2"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.kill",
+          "when": "view == gascityCockpitGhostex.sessions && viewItem =~ /\\.(running|sleeping|unknown)$/",
+          "group": "2_lifecycle@3"
         }
       ],
       "commandPalette": [
@@ -632,6 +741,42 @@
         },
         {
           "command": "gascityCockpit.mergeQueue.copyBranch",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.copyRef",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.focus",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.read",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.send",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.sleep",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.wake",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.kill",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.ghostex.project.newSession",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.ghostex.project.newAgentSession",
           "when": "false"
         },
         {

@@ -94,3 +94,17 @@ export {
   type WebSocketFactory,
   type WebSocketLike,
 } from './events.ts';
+
+export {
+  computeSessionPresentation,
+  GhostexExplorerModel,
+  resolveGhostexNotice,
+  sessionIcon,
+  sessionKindLabel,
+  type GhostexConnState,
+  type GhostexMessageNode,
+  type GhostexProjectNode,
+  type GhostexSessionNode,
+  type GhostexTreeNode,
+  type SessionPresentation,
+} from './explorerModel.ts';
