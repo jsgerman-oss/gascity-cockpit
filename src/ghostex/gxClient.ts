@@ -423,6 +423,12 @@ export class GxClient {
     return this.project('createSession', { ...params }, asSessionResult);
   }
 
+  /**
+   * Launch an agent-driven session. `cwd` (optional) sets the session's working
+   * directory — the Cockpit's agents-bridge passes the bead's worktree here so the
+   * launched agent starts in the right tree; omit it to let Ghostex use the
+   * project's default.
+   */
   createAgentSession(params: {
     projectId: string;
     agentId: string;
