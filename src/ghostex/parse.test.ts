@@ -251,3 +251,18 @@ test('parseHealth and parseServerHealth project the gxserver health bodies', () 
   assert.equal(bare.ok, false);
   assert.equal(bare.version, 'unknown');
 });
+
+test('the structured parsers reject non-object inputs', () => {
+  assert.throws(() => parseProject(null), /project: expected object/);
+  // a non-record element inside the snapshot's projects/groups arrays propagates.
+  assert.throws(() => parsePresentationSnapshot({ projects: [42] }), /presentation project: expected object/);
+  assert.throws(() => parsePresentationSnapshot({ groups: [42] }), /presentation group: expected object/);
+});
+
+test('parsePresentationSnapshot defaults a group sessionIds to [] when not an array', () => {
+  const snap = parsePresentationSnapshot({
+    groups: [{ groupId: 'G0', projectId: 'P0', sessionIds: 'not-an-array' }],
+  });
+  assert.equal(snap.groups.length, 1);
+  assert.deepEqual(snap.groups[0].sessionIds, []);
+});

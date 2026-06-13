@@ -359,3 +359,75 @@ test('readiness reports not-ok with diagnostics when unavailable', async () => {
   assert.equal(r.diagnostics.length, 1);
   assert.equal(r.endpoint, undefined);
 });
+
+// ---- the optional logger + fetch defaults + defensive wrap -----------------
+// These exercise the `inputs.log?.(...)` branches on each outcome path, the
+// `fetchImpl`-absent default, and the defensive non-probe-error wrap.
+
+test('discoverGhostex logs at info on a connected probe', async () => {
+  const logs: Array<{ level: string; message: string }> = [];
+  const result = await discoverGhostex({
+    readTokenFile: async () => 'file-token',
+    fetchImpl: fetchReturning(new Response(healthBody, { status: 200 })),
+    log: (level, message) => logs.push({ level, message }),
+  });
+  assert.equal(result.state, 'connected');
+  assert.ok(logs.some((l) => l.level === 'info' && /connected/.test(l.message)));
+});
+
+test('discoverGhostex logs at debug when the token file is absent', async () => {
+  const logs: Array<{ level: string; message: string }> = [];
+  const result = await discoverGhostex({
+    readTokenFile: async () => {
+      throw new Error('ENOENT');
+    },
+    fetchImpl: fetchReturning(new Response(healthBody, { status: 200 })),
+    log: (level, message) => logs.push({ level, message }),
+  });
+  assert.equal(result.state, 'connected');
+  if (result.state === 'connected') assert.equal(result.endpoint.tokenSource, 'none');
+  assert.ok(logs.some((l) => l.level === 'debug' && /no token file/.test(l.message)));
+});
+
+test('discoverGhostex logs at warn when the probe is unavailable', async () => {
+  const logs: Array<{ level: string; message: string }> = [];
+  const result = await discoverGhostex({
+    fetchImpl: async () => {
+      throw new Error('ECONNREFUSED');
+    },
+    log: (level, message) => logs.push({ level, message }),
+  });
+  assert.equal(result.state, 'unavailable');
+  assert.ok(logs.some((l) => l.level === 'warn' && /unavailable/.test(l.message)));
+});
+
+test('discoverGhostex wraps a non-probe error as unreachable instead of throwing', async () => {
+  // A logger that throws *after* a healthy probe makes a plain Error (not a
+  // GhostexProbeError) escape the try block, driving the defensive
+  // `err instanceof GhostexProbeError ? … : new GhostexProbeError('unreachable')`
+  // branch — discovery degrades to `unavailable` rather than crashing the caller.
+  let warned = false;
+  const result = await discoverGhostex({
+    settingsToken: 'tok',
+    fetchImpl: fetchReturning(new Response(healthBody, { status: 200 })),
+    log: (level) => {
+      if (level === 'info') throw new Error('logger boom');
+      if (level === 'warn') warned = true;
+    },
+  });
+  assert.equal(result.state, 'unavailable');
+  if (result.state === 'unavailable') assert.equal(result.reason, 'unreachable');
+  assert.equal(warned, true);
+});
+
+test('discoverGhostex falls back to the global fetch when none is injected', async () => {
+  const savedFetch = globalThis.fetch;
+  try {
+    (globalThis as { fetch?: unknown }).fetch = async () => new Response(healthBody, { status: 200 });
+    const result = await discoverGhostex({ settingsToken: 'tok' });
+    assert.equal(result.state, 'connected');
+    if (result.state === 'connected') assert.equal(result.endpoint.baseUrl, 'http://127.0.0.1:58744');
+  } finally {
+    globalThis.fetch = savedFetch;
+  }
+});

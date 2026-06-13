@@ -381,3 +381,50 @@ test('GhostexEventStream.start is idempotent and stop on idle is a no-op', () =>
   stream.stop();
   assert.equal(stream.connectionState, 'closed');
 });
+
+test('parseGhostexEvent rejects a presentationDelta carrying a malformed delta', () => {
+  // sessionRemoved with a non-string id → parseDelta yields null → the event is null.
+  assert.equal(
+    parseGhostexEvent({
+      type: 'presentationDelta',
+      revision: 1,
+      delta: { type: 'sessionRemoved', projectId: 'P0', sessionId: 42 },
+    }),
+    null,
+  );
+  // projectRemoved with a non-string projectId → null.
+  assert.equal(
+    parseGhostexEvent({
+      type: 'presentationDelta',
+      revision: 1,
+      delta: { type: 'projectRemoved', projectId: 42 },
+    }),
+    null,
+  );
+});
+
+test('GhostexEventStream stringifies a non-Error socket-error payload', () => {
+  const socket = new FakeSocket();
+  const clock = new FakeClock();
+  const logs: Array<{ level: string; meta?: Record<string, unknown> }> = [];
+  const stream = new GhostexEventStream({
+    baseUrl: 'http://127.0.0.1:58744',
+    token: 'tok',
+    createWebSocket: () => socket,
+    onEvent: () => {},
+    setTimer: clock.setTimer,
+    clearTimer: clock.clearTimer,
+    random: () => 0.5,
+    log: (level, _message, meta) => logs.push({ level, meta }),
+  });
+  stream.start();
+  socket.emitOpen();
+  // A bare value (not an Error, not a `{ message }` record) drives stringifyError's
+  // `String(event)` fallback rather than the `.message` paths.
+  socket.onerror?.(503);
+  assert.ok(
+    logs.some((l) => l.level === 'warn' && l.meta?.['error'] === '503'),
+    'the socket error should be logged with the stringified payload',
+  );
+  stream.stop();
+});
