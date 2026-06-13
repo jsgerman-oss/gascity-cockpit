@@ -25,4 +25,12 @@ test('the ghostex barrel re-exports the public foundation surface', () => {
   assert.equal(typeof ghostex.parseSession, 'function');
   assert.equal(typeof ghostex.parsePresentationSnapshot, 'function');
   assert.equal(ghostex.GhostexParseError.name, 'GhostexParseError');
+
+  // Board-sync engine
+  assert.equal(typeof ghostex.planReconcile, 'function');
+  assert.equal(typeof ghostex.applyPlan, 'function');
+  assert.equal(typeof ghostex.reconcile, 'function');
+  assert.equal(typeof ghostex.formatReport, 'function');
+  assert.equal(typeof ghostex.defaultBoardStatusMapping.boardToBead, 'function');
+  assert.deepEqual(ghostex.DEFAULT_CONFLICT_POLICY, { title: 'lastWriter', status: 'lastWriter' });
 });
