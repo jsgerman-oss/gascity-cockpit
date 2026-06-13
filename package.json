@@ -378,6 +378,12 @@
         "icon": "$(hubot)"
       },
       {
+        "command": "gascityCockpit.ghostex.chat",
+        "title": "Ghostex: Chat with Agent Session",
+        "category": "Ghostex",
+        "icon": "$(comment-discussion)"
+      },
+      {
         "command": "gascityCockpit.notifications.showPending",
         "title": "GasCity Cockpit: Show Pending Approvals",
         "category": "GasCity Cockpit",
@@ -546,14 +552,19 @@
           "group": "navigation@4"
         },
         {
-          "command": "gascityCockpit.ghostex.refresh",
+          "command": "gascityCockpit.ghostex.chat",
           "when": "view == gascityCockpitGhostex.sessions",
           "group": "navigation@1"
         },
         {
-          "command": "gascityCockpit.ghostex.checkConnection",
+          "command": "gascityCockpit.ghostex.refresh",
           "when": "view == gascityCockpitGhostex.sessions",
           "group": "navigation@2"
+        },
+        {
+          "command": "gascityCockpit.ghostex.checkConnection",
+          "when": "view == gascityCockpitGhostex.sessions",
+          "group": "navigation@3"
         },
         {
           "command": "gascityCockpit.timeTravel.open",

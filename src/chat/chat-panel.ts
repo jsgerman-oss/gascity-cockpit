@@ -5,7 +5,8 @@
 // bridges store state ⇄ webview messages, and cleans up.
 import * as vscode from "vscode";
 import { randomBytes } from "node:crypto";
-import { ConversationStore, type ConversationState } from "./conversation-store.ts";
+import type { ConversationState } from "./conversation-store.ts";
+import type { ChatConversation } from "./chat-conversation.ts";
 import { isWebviewToHost, toViewState, type HostToWebview } from "./protocol.ts";
 import { getChatHtml } from "./webview-html.ts";
 
@@ -20,9 +21,10 @@ export function makeNonce(): string {
 }
 
 /**
- * A live chat panel bound to one {@link ConversationStore}. The store is owned
- * by the panel: disposing the panel disposes the store and tears down its
- * stream. Create with {@link ChatPanel.create}.
+ * A live chat panel bound to one {@link ChatConversation} — a cockpit session
+ * (`ConversationStore`) or a Ghostex agent session (`GhostexConversationStore`).
+ * The store is owned by the panel: disposing the panel disposes the store and
+ * tears down its stream. Create with {@link ChatPanel.create}.
  */
 export class ChatPanel {
   static readonly viewType = "gascityCockpit.chat";
@@ -32,7 +34,7 @@ export class ChatPanel {
 
   private constructor(
     private readonly panel: vscode.WebviewPanel,
-    private readonly store: ConversationStore,
+    private readonly store: ChatConversation,
   ) {
     panel.webview.html = getChatHtml({
       nonce: makeNonce(),
@@ -48,7 +50,7 @@ export class ChatPanel {
   }
 
   /** Open a chat panel for a session, beside the active editor by default. */
-  static create(store: ConversationStore, options: { viewColumn?: vscode.ViewColumn } = {}): ChatPanel {
+  static create(store: ChatConversation, options: { viewColumn?: vscode.ViewColumn } = {}): ChatPanel {
     const title = store.state.title ?? store.state.sessionId;
     const panel = vscode.window.createWebviewPanel(
       ChatPanel.viewType,

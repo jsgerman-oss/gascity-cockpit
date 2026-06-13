@@ -37,6 +37,7 @@ import {
   type WebSocketFactory,
   type WebSocketLike,
 } from '../ghostex/index.ts';
+import { openGhostexChat } from '../chat/open-ghostex-chat.ts';
 import { CONFIG_SECTION, type FeatureHost } from '../host/index.ts';
 
 /** The Sessions view id (was the placeholder's; the real tree now owns it). */
@@ -46,6 +47,7 @@ const CMD = {
   refresh: 'gascityCockpit.ghostex.refresh',
   checkConnection: 'gascityCockpit.ghostex.checkConnection',
   showOutput: 'gascityCockpit.ghostex.showOutput',
+  chat: 'gascityCockpit.ghostex.chat',
   copyRef: 'gascityCockpit.ghostex.session.copyRef',
 } as const;
 
@@ -270,6 +272,13 @@ export function registerGhostexExplorer(host: FeatureHost): { refresh: () => voi
       }
     }),
     vscode.commands.registerCommand(CMD.showOutput, () => host.showOutput()),
+    vscode.commands.registerCommand(CMD.chat, () =>
+      openGhostexChat({
+        log: host.log,
+        discoveryInputs,
+        pollMs: Math.max(2, config().get<number>('ghostex.pollSeconds', 10)) * 1000,
+      }),
+    ),
     vscode.commands.registerCommand(CMD.copyRef, async (node?: GhostexTreeNode) => {
       if (node?.kind !== 'session') return;
       await vscode.env.clipboard.writeText(node.session.sessionId);

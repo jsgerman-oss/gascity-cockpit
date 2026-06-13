@@ -25,6 +25,7 @@ export {
 export { getChatHtml, escapeHtml, type ChatHtmlOptions } from "./webview-html.ts";
 export { ChatPanel } from "./chat-panel.ts";
 export { ChatViewProvider, type ChatViewHost } from "./chat-view.ts";
+export type { ChatConversation, ChatActionResult } from "./chat-conversation.ts";
 export {
   isLikelyMayor,
   rankSessionsForChat,
@@ -32,3 +33,18 @@ export {
   type SessionPickLabel,
 } from "./session-picker.ts";
 export { openChat, type OpenChatArgs } from "./open-chat.ts";
+export {
+  GhostexConversationStore,
+  composeGhostexTurns,
+  ghostexActivityToConversation,
+  type GhostexChatClient,
+  type GhostexConversationStoreDeps,
+  type GhostexEventSubscribe,
+} from "./ghostex-conversation-store.ts";
+export {
+  isAgentSession,
+  rankGhostexAgentSessions,
+  ghostexSessionPickLabel,
+  type GhostexSessionPickLabel,
+} from "./ghostex-session-picker.ts";
+export { openGhostexChat, type OpenGhostexChatArgs } from "./open-ghostex-chat.ts";
