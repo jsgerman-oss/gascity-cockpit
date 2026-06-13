@@ -48,6 +48,7 @@ export type GxEndpoint =
   | 'readSessionText'
   | 'sendSessionText'
   | 'sendSessionMessage'
+  | 'requestSessionRename'
   | 'sleepSession'
   | 'wakeSession'
   | 'killSession'
@@ -137,27 +138,51 @@ export function cliArgsFor(endpoint: GxEndpoint, params: GxParams): string[] {
     case 'listProjects':
       return ['projects'];
     case 'createSession':
-      return ['create-session', ...flag('projectId', params['projectId']), ...flag('title', params['title'])];
+      return [
+        'create-session',
+        ...flag('projectId', params['projectId']),
+        ...flag('title', params['title']),
+        ...flag('cwd', params['cwd']),
+      ];
     case 'createAgentSession':
       return [
         'create-agent',
         ...flag('projectId', params['projectId']),
         ...flag('agentId', params['agentId']),
+        ...flag('title', params['title']),
+        ...flag('cwd', params['cwd']),
       ];
     case 'readSessionText':
-      return ['read-text', ...flag('sessionId', params['sessionId'])];
+      return ['read-text', ...flag('sessionId', params['sessionId']), ...flag('projectId', params['projectId'])];
     case 'sendSessionText':
-      return ['send-text', ...flag('sessionId', params['sessionId']), ...flag('text', params['text'])];
+      return [
+        'send-text',
+        ...flag('sessionId', params['sessionId']),
+        ...flag('projectId', params['projectId']),
+        ...flag('text', params['text']),
+      ];
     case 'sendSessionMessage':
-      return ['send-message', ...flag('sessionId', params['sessionId']), ...flag('text', params['text'])];
+      return [
+        'send-message',
+        ...flag('sessionId', params['sessionId']),
+        ...flag('projectId', params['projectId']),
+        ...flag('text', params['text']),
+      ];
+    case 'requestSessionRename':
+      return [
+        'rename',
+        ...flag('sessionId', params['sessionId']),
+        ...flag('projectId', params['projectId']),
+        ...flag('title', params['title']),
+      ];
     case 'sleepSession':
-      return ['sleep', ...flag('sessionId', params['sessionId'])];
+      return ['sleep', ...flag('sessionId', params['sessionId']), ...flag('projectId', params['projectId'])];
     case 'wakeSession':
-      return ['wake', ...flag('sessionId', params['sessionId'])];
+      return ['wake', ...flag('sessionId', params['sessionId']), ...flag('projectId', params['projectId'])];
     case 'killSession':
-      return ['kill', ...flag('sessionId', params['sessionId'])];
+      return ['kill', ...flag('sessionId', params['sessionId']), ...flag('projectId', params['projectId'])];
     case 'focusSession':
-      return ['focus', ...flag('sessionId', params['sessionId'])];
+      return ['focus', ...flag('sessionId', params['sessionId']), ...flag('projectId', params['projectId'])];
     case 'readPresentationSnapshot':
       return ['snapshot'];
     case 'runBeadsAction':
@@ -394,24 +419,46 @@ export class GxClient {
     return this.project('listSessions', {}, parseSessionList);
   }
 
-  createSession(params: { projectId: string; title?: string }): Promise<GhostexSession> {
+  createSession(params: { projectId: string; title?: string; cwd?: string }): Promise<GhostexSession> {
     return this.project('createSession', { ...params }, asSessionResult);
   }
 
-  createAgentSession(params: { projectId: string; agentId: string }): Promise<GhostexSession> {
+  createAgentSession(params: {
+    projectId: string;
+    agentId: string;
+    title?: string;
+    cwd?: string;
+  }): Promise<GhostexSession> {
     return this.project('createAgentSession', { ...params }, asSessionResult);
   }
 
-  readSessionText(params: { sessionId: string }): Promise<string> {
+  readSessionText(params: { sessionId: string; projectId?: string }): Promise<string> {
     return this.project('readSessionText', { ...params }, parseSessionText);
   }
 
-  sendSessionText(params: { sessionId: string; text: string }): Promise<void> {
+  sendSessionText(params: { sessionId: string; projectId?: string; text: string }): Promise<void> {
     return this.projectVoid('sendSessionText', { ...params });
   }
 
-  sendSessionMessage(params: { sessionId: string; text: string }): Promise<void> {
+  sendSessionMessage(params: {
+    sessionId: string;
+    projectId?: string;
+    text: string;
+    /** Append a trailing Enter so the agent submits (gxserver default true). */
+    submit?: boolean;
+  }): Promise<void> {
     return this.projectVoid('sendSessionMessage', { ...params });
+  }
+
+  /**
+   * Request a session rename (gxserver `/api/requestSessionRename`). This is the
+   * second phase of the agent-session create flow: an agent session is born with
+   * an auto-generated first-prompt title, so a caller-chosen title is applied by
+   * a follow-up rename. Fire-and-confirm — the (re)named session is already in
+   * hand from the create call, so the rename payload is ignored.
+   */
+  renameSession(params: { projectId: string; sessionId: string; title: string }): Promise<void> {
+    return this.projectVoid('requestSessionRename', { ...params });
   }
 
   sleepSession(params: { sessionId: string; projectId?: string }): Promise<GhostexSessionLifecycleResult> {

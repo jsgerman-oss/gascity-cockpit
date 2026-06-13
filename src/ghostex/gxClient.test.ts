@@ -82,6 +82,7 @@ test('cliArgsFor maps every endpoint to a base verb', () => {
     readSessionText: 'read-text',
     sendSessionText: 'send-text',
     sendSessionMessage: 'send-message',
+    requestSessionRename: 'rename',
     sleepSession: 'sleep',
     wakeSession: 'wake',
     killSession: 'kill',
@@ -96,6 +97,72 @@ test('cliArgsFor maps every endpoint to a base verb', () => {
   }
   // an unmapped verb falls back to itself
   assert.deepEqual(cliArgsFor('totallyUnknown' as GxEndpoint, {}), ['totallyUnknown']);
+});
+
+test('cliArgsFor threads projectId/cwd/title onto the session-driving verbs', () => {
+  assert.deepEqual(
+    cliArgsFor('createAgentSession', { projectId: 'P0', agentId: 'claude', title: 'Fix bug', cwd: '/w' }),
+    ['create-agent', '--project-id', 'P0', '--agent-id', 'claude', '--title', 'Fix bug', '--cwd', '/w'],
+  );
+  assert.deepEqual(cliArgsFor('createSession', { projectId: 'P0', title: 'shell', cwd: '/w' }), [
+    'create-session',
+    '--project-id',
+    'P0',
+    '--title',
+    'shell',
+    '--cwd',
+    '/w',
+  ]);
+  // gxserver scopes session ops by project, so projectId rides along when present.
+  assert.deepEqual(cliArgsFor('focusSession', { sessionId: 'G0', projectId: 'P0' }), [
+    'focus',
+    '--session-id',
+    'G0',
+    '--project-id',
+    'P0',
+  ]);
+  assert.deepEqual(cliArgsFor('readSessionText', { sessionId: 'G0', projectId: 'P0' }), [
+    'read-text',
+    '--session-id',
+    'G0',
+    '--project-id',
+    'P0',
+  ]);
+  assert.deepEqual(cliArgsFor('requestSessionRename', { sessionId: 'G0', projectId: 'P0', title: 'New' }), [
+    'rename',
+    '--session-id',
+    'G0',
+    '--project-id',
+    'P0',
+    '--title',
+    'New',
+  ]);
+});
+
+test('GxClient.createAgentSession forwards title/cwd; renameSession hits requestSessionRename', async () => {
+  const fake = new FakeTransport(() => ({ session: sessionJson }));
+  const client = new GxClient(fake);
+  await client.createAgentSession({ projectId: 'P0xyz', agentId: 'claude', title: 'My session', cwd: '/repo' });
+  assert.deepEqual(fake.calls[0], {
+    endpoint: 'createAgentSession',
+    params: { projectId: 'P0xyz', agentId: 'claude', title: 'My session', cwd: '/repo' },
+  });
+  await client.renameSession({ projectId: 'P0xyz', sessionId: 'G0abc', title: 'Renamed' });
+  assert.deepEqual(fake.calls[1], {
+    endpoint: 'requestSessionRename',
+    params: { projectId: 'P0xyz', sessionId: 'G0abc', title: 'Renamed' },
+  });
+});
+
+test('GxClient read/send/lifecycle forward projectId and the submit flag', async () => {
+  const fake = new FakeTransport(() => ({ text: 'out' }));
+  const client = new GxClient(fake);
+  await client.readSessionText({ sessionId: 'G0abc', projectId: 'P0xyz' });
+  await client.sendSessionText({ sessionId: 'G0abc', projectId: 'P0xyz', text: 'staged' });
+  await client.sendSessionMessage({ sessionId: 'G0abc', projectId: 'P0xyz', text: 'go', submit: false });
+  assert.deepEqual(fake.calls[0].params, { sessionId: 'G0abc', projectId: 'P0xyz' });
+  assert.deepEqual(fake.calls[1].params, { sessionId: 'G0abc', projectId: 'P0xyz', text: 'staged' });
+  assert.deepEqual(fake.calls[2].params, { sessionId: 'G0abc', projectId: 'P0xyz', text: 'go', submit: false });
 });
 
 // ---- CliTransport ----------------------------------------------------------
