@@ -1,0 +1,34 @@
+{
+  "commands": [
+    {
+      "command": "gascityCockpit.ghostex.launchAgentForBead",
+      "title": "Launch Agent in Ghostex",
+      "category": "Ghostex",
+      "icon": "$(rocket)"
+    },
+    {
+      "command": "gascityCockpit.ghostex.revealAgentForBead",
+      "title": "Reveal Ghostex Session",
+      "category": "Ghostex",
+      "icon": "$(eye)"
+    }
+  ],
+  "menus": {
+    "commandPalette": [
+      { "command": "gascityCockpit.ghostex.launchAgentForBead", "when": "false" },
+      { "command": "gascityCockpit.ghostex.revealAgentForBead", "when": "false" }
+    ],
+    "view/item/context": [
+      {
+        "command": "gascityCockpit.ghostex.launchAgentForBead",
+        "when": "view == gascityCockpit.beads && viewItem == gascityBead",
+        "group": "ghostex@1"
+      },
+      {
+        "command": "gascityCockpit.ghostex.revealAgentForBead",
+        "when": "view == gascityCockpit.beads && viewItem == gascityBead",
+        "group": "ghostex@2"
+      }
+    ]
+  }
+}

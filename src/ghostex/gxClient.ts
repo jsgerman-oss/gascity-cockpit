@@ -143,6 +143,7 @@ export function cliArgsFor(endpoint: GxEndpoint, params: GxParams): string[] {
         'create-agent',
         ...flag('projectId', params['projectId']),
         ...flag('agentId', params['agentId']),
+        ...flag('cwd', params['cwd']),
       ];
     case 'readSessionText':
       return ['read-text', ...flag('sessionId', params['sessionId'])];
@@ -398,7 +399,17 @@ export class GxClient {
     return this.project('createSession', { ...params }, asSessionResult);
   }
 
-  createAgentSession(params: { projectId: string; agentId: string }): Promise<GhostexSession> {
+  /**
+   * Launch an agent-driven session. `cwd` (optional) sets the session's working
+   * directory — the Cockpit's agents-bridge passes the bead's worktree here so the
+   * launched agent starts in the right tree; omit it to let Ghostex use the
+   * project's default.
+   */
+  createAgentSession(params: {
+    projectId: string;
+    agentId: string;
+    cwd?: string;
+  }): Promise<GhostexSession> {
     return this.project('createAgentSession', { ...params }, asSessionResult);
   }
 

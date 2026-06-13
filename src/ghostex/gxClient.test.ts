@@ -67,6 +67,13 @@ test('cliArgsFor maps endpoints to gx argv with kebab-cased flags', () => {
   ]);
 });
 
+test('cliArgsFor threads the agents-bridge cwd onto create-agent', () => {
+  assert.deepEqual(
+    cliArgsFor('createAgentSession', { projectId: 'P0xyz', agentId: 'claude', cwd: '/wt/furiosa' }),
+    ['create-agent', '--project-id', 'P0xyz', '--agent-id', 'claude', '--cwd', '/wt/furiosa'],
+  );
+});
+
 test('cliArgsFor omits absent flags and falls back to the bare endpoint', () => {
   assert.deepEqual(cliArgsFor('readSessionText', {}), ['read-text']);
   assert.deepEqual(cliArgsFor('focusSession', { sessionId: 'G0abc' }), ['focus', '--session-id', 'G0abc']);
@@ -331,6 +338,12 @@ test('GxClient.createAgentSession unwraps { session } and a bare session', async
   assert.equal((await wrapped.createAgentSession({ projectId: 'P0xyz', agentId: 'claude' })).sessionId, 'G0abc');
   const bare = new GxClient(new FakeTransport(() => sessionJson));
   assert.equal((await bare.createSession({ projectId: 'P0xyz' })).sessionId, 'G0abc');
+});
+
+test('GxClient.createAgentSession forwards the optional cwd to the transport', async () => {
+  const fake = new FakeTransport(() => ({ session: sessionJson }));
+  await new GxClient(fake).createAgentSession({ projectId: 'P0xyz', agentId: 'claude', cwd: '/wt/furiosa' });
+  assert.deepEqual(fake.calls[0].params, { projectId: 'P0xyz', agentId: 'claude', cwd: '/wt/furiosa' });
 });
 
 test('GxClient.readSessionText returns the text payload', async () => {

@@ -186,3 +186,25 @@ export {
   type ReconcilePolicy,
   type SessionStateSnapshot,
 } from './stateSync.ts';
+
+export {
+  deriveAgentId,
+  deriveCwd,
+  deriveLaunchRequest,
+  deriveProjectMatch,
+  launchAgentForBead,
+  linkageMetadata,
+  LINKAGE_KEYS,
+  readLinkage,
+  resolveProjectId,
+  type AgentLauncher,
+  type AgentLinkage,
+  type AgentLaunchRequest,
+  type BeadLike,
+  type DeriveResult,
+  type LaunchDeps,
+  type LaunchFailureReason,
+  type LaunchOutcome,
+  type LinkageRecorder,
+  type LinkageRecordResult,
+} from './agentBridge.ts';

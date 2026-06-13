@@ -378,6 +378,18 @@
         "icon": "$(hubot)"
       },
       {
+        "command": "gascityCockpit.ghostex.launchAgentForBead",
+        "title": "Launch Agent in Ghostex",
+        "category": "Ghostex",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "gascityCockpit.ghostex.revealAgentForBead",
+        "title": "Reveal Ghostex Session",
+        "category": "Ghostex",
+        "icon": "$(eye)"
+      },
+      {
         "command": "gascityCockpit.notifications.showPending",
         "title": "GasCity Cockpit: Show Pending Approvals",
         "category": "GasCity Cockpit",
@@ -696,6 +708,16 @@
           "command": "gascityCockpit.ghostex.session.kill",
           "when": "view == gascityCockpitGhostex.sessions && viewItem =~ /\\.(running|sleeping|unknown)$/",
           "group": "2_lifecycle@3"
+        },
+        {
+          "command": "gascityCockpit.ghostex.launchAgentForBead",
+          "when": "view == gascityCockpit.beads && viewItem == gascityBead",
+          "group": "ghostex@1"
+        },
+        {
+          "command": "gascityCockpit.ghostex.revealAgentForBead",
+          "when": "view == gascityCockpit.beads && viewItem == gascityBead",
+          "group": "ghostex@2"
         }
       ],
       "commandPalette": [
@@ -777,6 +799,14 @@
         },
         {
           "command": "gascityCockpit.ghostex.project.newAgentSession",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.ghostex.launchAgentForBead",
+          "when": "false"
+        },
+        {
+          "command": "gascityCockpit.ghostex.revealAgentForBead",
           "when": "false"
         },
         {
