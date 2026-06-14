@@ -10,15 +10,26 @@ coverage/**
 
 src/**
 scripts/**
-# Non-extension build targets (the fleet-status CLI, future ACP/MCP adapters).
-# Only dist/extension.js is the extension; the CLI bundle ships separately.
+# Non-extension build targets (the fleet-status CLI, the standalone web +
+# companion apps, future ACP/MCP adapters). Only dist/extension.js is the
+# extension; these bundles ship/run separately. The dashboard webview frames an
+# external URL rather than loading dist/web, so none of these are runtime assets.
 targets/**
+packages/**
 dist/targets/**
+dist/web/**
+dist/companion/**
 openapi/**
 docs/**
 .beads/**
 .gc/**
 .claude/**
+.serena/**
+# The marketing site (deployed separately via deploy-site.yml) and the gas-city
+# agent pack (a standalone deliverable installed into cities, not loaded by the
+# extension at runtime) are not part of the bundled extension.
+site/**
+pack/**
 
 esbuild.mjs
 eslint.config.mjs
@@ -26,6 +37,7 @@ vitest.config.ts
 tsconfig.json
 .gitignore
 .eslintcache
+.rafter.yml
 
 **/*.ts
 **/*.map
