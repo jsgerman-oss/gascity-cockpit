@@ -378,6 +378,12 @@
         "icon": "$(hubot)"
       },
       {
+        "command": "gascityCockpit.ghostex.proxySession",
+        "title": "Ghostex: Proxy gas-city Session…",
+        "category": "Ghostex",
+        "icon": "$(remote)"
+      },
+      {
         "command": "gascityCockpit.notifications.showPending",
         "title": "GasCity Cockpit: Show Pending Approvals",
         "category": "GasCity Cockpit",
@@ -544,6 +550,11 @@
           "command": "gascityCockpit.fleetQuery.open",
           "when": "view == gascityCockpit.fleet",
           "group": "navigation@4"
+        },
+        {
+          "command": "gascityCockpit.ghostex.proxySession",
+          "when": "view == gascityCockpitGhostex.sessions",
+          "group": "navigation@0"
         },
         {
           "command": "gascityCockpit.ghostex.refresh",

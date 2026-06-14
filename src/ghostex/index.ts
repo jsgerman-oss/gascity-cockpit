@@ -186,3 +186,19 @@ export {
   type ReconcilePolicy,
   type SessionStateSnapshot,
 } from './stateSync.ts';
+
+export {
+  GhostexSessionProxy,
+  PROXY_RESET_DIVIDER,
+  paneAppend,
+  renderTranscript,
+  type GhostexProxyClient,
+  type GhostexSessionProxyDeps,
+  type PaneWrite,
+  type ProxiedSessionSnapshot,
+  type ProxyActivity,
+  type ProxyConnection,
+  type ProxySourceSubscribe,
+  type ProxyState,
+  type ProxyTurn,
+} from './agentProxy.ts';

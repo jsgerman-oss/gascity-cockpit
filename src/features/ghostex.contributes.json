@@ -90,6 +90,12 @@
       "title": "Ghostex: New Agent Session",
       "category": "Ghostex",
       "icon": "$(hubot)"
+    },
+    {
+      "command": "gascityCockpit.ghostex.proxySession",
+      "title": "Ghostex: Proxy gas-city Session…",
+      "category": "Ghostex",
+      "icon": "$(remote)"
     }
   ],
   "menus": {
@@ -105,6 +111,11 @@
       { "command": "gascityCockpit.ghostex.project.newAgentSession", "when": "false" }
     ],
     "view/title": [
+      {
+        "command": "gascityCockpit.ghostex.proxySession",
+        "when": "view == gascityCockpitGhostex.sessions",
+        "group": "navigation@0"
+      },
       {
         "command": "gascityCockpit.ghostex.refresh",
         "when": "view == gascityCockpitGhostex.sessions",

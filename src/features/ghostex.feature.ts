@@ -13,12 +13,18 @@
  * restart — both are good moments to re-check the local Ghostex daemon.
  */
 import { registerGhostexExplorer } from '../views/ghostexExplorer.ts';
+import { registerGhostexProxy } from '../views/ghostexProxy.ts';
 import type { CockpitFeature, FeatureHost } from '../host/index.ts';
 
 const ghostexFeature: CockpitFeature = {
   id: 'ghostex',
   activate(host: FeatureHost): void {
     const view = registerGhostexExplorer(host);
+
+    // D4b: proxy a gas-city-owned agent session into a Ghostex pane (display +
+    // attach). The explorer surfaces Ghostex-hosted sessions; this surfaces the
+    // reverse — a gas-city session viewable/attachable in Ghostex.
+    registerGhostexProxy(host);
 
     // Load the gxserver snapshot once on activation so the tree is meaningful
     // before any supervisor event fires.
