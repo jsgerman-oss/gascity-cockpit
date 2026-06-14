@@ -21,6 +21,11 @@
     "vscode": "^1.90.0",
     "node": ">=20"
   },
+  "gascityCockpit": {
+    "ghostex": {
+      "gxserverProtocolVersion": 1
+    }
+  },
   "categories": [
     "Other"
   ],
