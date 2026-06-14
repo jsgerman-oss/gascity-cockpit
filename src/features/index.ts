@@ -35,6 +35,7 @@ import savedViewsFeature from './savedViews.feature.ts';
 import metricsFeature from './metrics.feature.ts';
 import ghostexFeature from './ghostex.feature.ts';
 import ghostexAgentBridgeFeature from './ghostexAgentBridge.feature.ts';
+import ghostexChatFeature from './ghostexChat.feature.ts';
 
 /** Every cockpit feature, in activation order. Append new features here. */
 export const FEATURES: readonly CockpitFeature[] = [
@@ -59,6 +60,7 @@ export const FEATURES: readonly CockpitFeature[] = [
   metricsFeature,
   ghostexFeature,
   ghostexAgentBridgeFeature,
+  ghostexChatFeature,
 ];
 
 /** Activate every registered feature against the shared host. */

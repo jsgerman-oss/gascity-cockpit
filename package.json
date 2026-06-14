@@ -390,6 +390,12 @@
         "icon": "$(eye)"
       },
       {
+        "command": "gascityCockpit.ghostex.session.chat",
+        "title": "Chat with Session",
+        "category": "Ghostex",
+        "icon": "$(comment-discussion)"
+      },
+      {
         "command": "gascityCockpit.notifications.showPending",
         "title": "GasCity Cockpit: Show Pending Approvals",
         "category": "GasCity Cockpit",
@@ -718,6 +724,11 @@
           "command": "gascityCockpit.ghostex.revealAgentForBead",
           "when": "view == gascityCockpit.beads && viewItem == gascityBead",
           "group": "ghostex@2"
+        },
+        {
+          "command": "gascityCockpit.ghostex.session.chat",
+          "when": "view == gascityCockpitGhostex.sessions && viewItem =~ /^ghostexSession\\.agent\\./",
+          "group": "1_session@0"
         }
       ],
       "commandPalette": [
@@ -884,6 +895,12 @@
           "default": 500,
           "minimum": 50,
           "markdownDescription": "Base delay (ms) for exponential backoff when reconnecting the gxserver `/api/events` WebSocket. The ceiling is fixed at 15s."
+        },
+        "gascityCockpit.ghostex.chatPollSeconds": {
+          "type": "number",
+          "default": 2,
+          "minimum": 1,
+          "markdownDescription": "How often (seconds) the Ghostex chat panel re-reads a session's output as a fallback to the `/api/events` stream. Lower is snappier; raise it to reduce gxserver load."
         },
         "gascityCockpit.notifications.enabled": {
           "type": "boolean",
