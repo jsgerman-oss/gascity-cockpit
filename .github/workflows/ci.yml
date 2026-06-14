@@ -17,6 +17,11 @@ jobs:
           node-version: "20"
           cache: npm
       - run: npm ci
+      # The shared `contributes` block is generated from the per-feature
+      # manifests (src/features/*.contributes.json) — including the ghostex
+      # feature. Fail fast if package.json was hand-edited out of sync.
+      - run: npm run sync:contributes:check
       # Runs typecheck + lint + vitest with v8 coverage; the coverage
-      # thresholds (95/90/95/95) in vitest.config.ts fail the job on a regression.
+      # thresholds (95/90/95/95 globally, ≥90% on the ghostex feature) in
+      # vitest.config.ts fail the job on a regression.
       - run: npm run check

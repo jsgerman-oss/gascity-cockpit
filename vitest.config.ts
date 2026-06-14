@@ -76,10 +76,19 @@ export default defineConfig({
         "targets/web/main.ts",
         "packages/companion/main.ts",
       ],
-      // Target gate (≥95 everywhere testable). NOT yet wired into `npm run
-      // check` — flip on after the fill phase brings cores to green, so
-      // in-flight PRs aren't blocked meanwhile.
-      thresholds: { lines: 95, branches: 90, functions: 95, statements: 95 },
+      // Target gate (≥95 everywhere testable), enforced by `npm run check`
+      // via `test:coverage`. The ghostex feature carries its own ≥90% contract
+      // (epic zmux-d8e820eb: "≥90% core coverage"); pin it per-feature so the
+      // gate covering ghostex can't be diluted by the rest of the suite as the
+      // codebase grows. Glob-scoped files are checked against their own
+      // threshold and excluded from the global one (vitest 2.x semantics).
+      thresholds: {
+        lines: 95,
+        branches: 90,
+        functions: 95,
+        statements: 95,
+        "src/ghostex/**": { lines: 90, branches: 90, functions: 90, statements: 90 },
+      },
     },
   },
 });
