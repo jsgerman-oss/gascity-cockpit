@@ -1,0 +1,30 @@
+{
+  "commands": [
+    {
+      "command": "gascityCockpit.ghostex.session.chat",
+      "title": "Chat with Session",
+      "category": "Ghostex",
+      "icon": "$(comment-discussion)"
+    }
+  ],
+  "menus": {
+    "view/item/context": [
+      {
+        "command": "gascityCockpit.ghostex.session.chat",
+        "when": "view == gascityCockpitGhostex.sessions && viewItem =~ /^ghostexSession\\.agent\\./",
+        "group": "1_session@0"
+      }
+    ]
+  },
+  "configuration": {
+    "title": "GasCity Cockpit",
+    "properties": {
+      "gascityCockpit.ghostex.chatPollSeconds": {
+        "type": "number",
+        "default": 2,
+        "minimum": 1,
+        "markdownDescription": "How often (seconds) the Ghostex chat panel re-reads a session's output as a fallback to the `/api/events` stream. Lower is snappier; raise it to reduce gxserver load."
+      }
+    }
+  }
+}

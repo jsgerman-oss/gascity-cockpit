@@ -208,3 +208,19 @@ export {
   type LinkageRecorder,
   type LinkageRecordResult,
 } from './agentBridge.ts';
+
+export {
+  GhostexChatStore,
+  ghostexChatPickLabel,
+  rankGhostexSessionsForChat,
+  toChatActivity,
+  toGhostexChatViewState,
+  type GhostexChatActivity,
+  type GhostexChatClient,
+  type GhostexChatConnection,
+  type GhostexChatPickLabel,
+  type GhostexChatState,
+  type GhostexChatStoreDeps,
+  type GhostexChatSubmitResult,
+  type GhostexEventSubscribe,
+} from './chatBridge.ts';
